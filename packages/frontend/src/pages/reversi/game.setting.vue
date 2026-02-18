@@ -80,11 +80,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 					</MkFolder>
 
-					<MkFolder v-if="myFormItems.length > 0" :defaultOpen="true">
+					<MkFolder v-if="botFormItems.length > 0" :defaultOpen="true">
 						<template #label>Bot設定</template>
 
 						<div class="_gaps_s">
-							<template v-for="item in myFormItems" :key="item.id">
+							<template v-for="item in botFormItems" :key="item.id">
 								<MkSwitch v-if="item.type === 'switch'" :modelValue="item.value" @update:modelValue="value => updateFormItem(item.id, value)">{{ item.label }}</MkSwitch>
 								<div v-else-if="item.type === 'radio'" class="_gaps_xs">
 									<div>{{ item.label }}</div>
@@ -164,9 +164,14 @@ type ReversiFormItem =
 	| { id: string; type: 'switch'; label: string; value: boolean }
 	| { id: string; type: 'radio'; label: string; value: number; items: Array<{ label: string; value: number }> };
 
-const myFormKey = computed<'form1' | 'form2'>(() => game.value.user1Id === $i.id ? 'form1' : 'form2');
-const myFormItems = computed<ReversiFormItem[]>(() => {
-	const form = game.value[myFormKey.value];
+const botFormKey = computed<'form1' | 'form2' | null>(() => {
+	if (game.value.user1?.isBot) return 'form1';
+	if (game.value.user2?.isBot) return 'form2';
+	return null;
+});
+const botFormItems = computed<ReversiFormItem[]>(() => {
+	if (botFormKey.value == null) return [];
+	const form = game.value[botFormKey.value];
 	if (!Array.isArray(form)) return [];
 	return form.filter((item): item is ReversiFormItem => {
 		return typeof item?.id === 'string' && (item?.type === 'switch' || item?.type === 'radio');
@@ -254,7 +259,8 @@ function updateSettings(key: typeof Misskey.reversiUpdateKeys[number]) {
 }
 
 function updateFormItem(id: string, value: unknown) {
-	const key = myFormKey.value;
+	const key = botFormKey.value;
+	if (key == null) return;
 	const form = game.value[key];
 	if (!Array.isArray(form)) return;
 

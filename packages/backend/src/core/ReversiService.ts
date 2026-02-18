@@ -477,8 +477,16 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 		if ((game.user1Id !== user.id) && (game.user2Id !== user.id)) return;
 		if ((game.user1Id === user.id) && game.user1Ready) return;
 		if ((game.user2Id === user.id) && game.user2Ready) return;
-		if (key === 'form1' && game.user1Id !== user.id) return;
-		if (key === 'form2' && game.user2Id !== user.id) return;
+		if (key === 'form1') {
+			const canUpdateOwn = game.user1Id === user.id;
+			const canUpdateBotOpponent = game.user2Id === user.id && game.user1?.isBot === true;
+			if (!canUpdateOwn && !canUpdateBotOpponent) return;
+		}
+		if (key === 'form2') {
+			const canUpdateOwn = game.user2Id === user.id;
+			const canUpdateBotOpponent = game.user1Id === user.id && game.user2?.isBot === true;
+			if (!canUpdateOwn && !canUpdateBotOpponent) return;
+		}
 
 		const updatedGame = {
 			...game,

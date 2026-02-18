@@ -211,6 +211,7 @@ export const paramDef = {
 		enableRemoteNotesCleaning: { type: 'boolean' },
 		aiModerationEnabled: { type: 'boolean' },
 		aiModerationGeminiApiKey: { type: 'string', nullable: true },
+		aiModerationViolationAction: { type: 'string', enum: ['delete', 'hideFromOthers', 'homeOnly', 'flagOnly'] },
 		runAiModerationGeminiScanNow: { type: 'boolean' },
 		remoteNotesCleaningExpiryDaysForEachNotes: { type: 'number' },
 		remoteNotesCleaningMaxProcessingDurationInMinutes: { type: 'number' },
@@ -753,6 +754,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (ps.aiModerationGeminiApiKey !== undefined) {
 				const value = (ps.aiModerationGeminiApiKey ?? '').trim();
 				set.aiModerationGeminiApiKey = value === '' ? null : value;
+			}
+
+			if (ps.aiModerationViolationAction !== undefined) {
+				set.aiModerationViolationAction = ps.aiModerationViolationAction;
 			}
 
 			if (ps.remoteNotesCleaningExpiryDaysForEachNotes !== undefined) {

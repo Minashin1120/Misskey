@@ -730,6 +730,12 @@ export class MiMeta {
 	})
 	public aiModerationLastCheckedNoteId: string | null;
 
+	@Column('varchar', {
+		length: 32,
+		default: 'flagOnly',
+	})
+	public aiModerationViolationAction: 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly';
+
 	@Column('integer', {
 		default: 60, // minutes
 	})

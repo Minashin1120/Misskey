@@ -54,6 +54,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #caption>Gemini 2.5 Flash-Liteで新規投稿を定期チェックし、違反候補を通報として送信します。</template>
 						</MkSwitch>
 
+						<MkSelect v-model="aiModerationViolationAction" :items="aiModerationViolationActionDef" @update:modelValue="onChange_aiModerationViolationAction">
+						<template #label><SearchLabel>違反時の自動対応</SearchLabel></template>
+						<template #caption>違反候補を検知した投稿への初動対応を選択します。</template>
+						</MkSelect>
+
 						<MkInput v-model="aiModerationGeminiApiKey" type="password" autocomplete="off">
 						<template #label>Gemini APIキー</template>
 						<template #caption>Google AI StudioのAPIキー。空にするとAPIリクエストは停止します。</template>
@@ -214,6 +219,7 @@ const meta = await misskeyApi('admin/meta') as Misskey.Endpoints['admin/meta']['
 	aiModerationGeminiApiKey: string | null;
 	aiModerationLastCheckedNoteId: string | null;
 	blockRemoteSensitiveNotes: boolean;
+	aiModerationViolationAction: 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly';
 };
 
 const enableRegistration = ref(!meta.disableRegistration);
@@ -241,6 +247,13 @@ const mediaSilencedHosts = ref(meta.mediaSilencedHosts.join('\n'));
 const aiModerationEnabled = ref(!!meta.aiModerationEnabled);
 const aiModerationGeminiApiKey = ref(meta.aiModerationGeminiApiKey ?? '');
 const aiModerationLastCheckedNoteId = ref(meta.aiModerationLastCheckedNoteId ?? '');
+const aiModerationViolationAction = ref(meta.aiModerationViolationAction ?? 'flagOnly');
+const aiModerationViolationActionDef = [
+	{ label: '投稿を削除', value: 'delete' },
+	{ label: '他ユーザーから非表示', value: 'hideFromOthers' },
+	{ label: 'ホームタイムラインのみにする', value: 'homeOnly' },
+	{ label: 'フラグ付与のみ', value: 'flagOnly' },
+] as const;
 const aiModerationManualScanRunning = ref(false);
 
 async function onChange_enableRegistration(value: boolean) {
@@ -345,6 +358,17 @@ function save_mediaSilencedHosts() {
 	os.apiWithDialog('admin/update-meta', {
 		mediaSilencedHosts: mediaSilencedHosts.value.split('\n') || [],
 	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_aiModerationViolationAction(value: 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly') {
+	os.apiWithDialog('admin/update-meta', {
+		aiModerationViolationAction: value,
+	} as Misskey.Endpoints['admin/update-meta']['req'] & {
+		aiModerationViolationAction: 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly';
+	}).then(() => {
+		aiModerationViolationAction.value = value;
 		fetchInstance(true);
 	});
 }

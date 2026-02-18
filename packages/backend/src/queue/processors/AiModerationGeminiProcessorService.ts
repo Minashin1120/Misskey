@@ -13,11 +13,13 @@ import { AbuseReportService } from '@/core/AbuseReportService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
 import { NotificationService } from '@/core/NotificationService.js';
-import type { MiNote, NotesRepository } from '@/models/_.js';
+import { NoteDeleteService } from '@/core/NoteDeleteService.js';
+import type { MiNote, NotesRepository, UsersRepository } from '@/models/_.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
 const MODEL_NAME = 'gemini-2.5-flash-lite';
 const SCAN_LIMIT_PER_RUN = 20;
+type AiModerationViolationAction = 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly';
 
 type GeminiModerationResult = {
 	violation: boolean;
@@ -36,11 +38,15 @@ export class AiModerationGeminiProcessorService {
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
 
+		@Inject(DI.usersRepository)
+		private usersRepository: UsersRepository,
+
 		private metaService: MetaService,
 		private abuseReportService: AbuseReportService,
 		private httpRequestService: HttpRequestService,
 		private systemAccountService: SystemAccountService,
 		private notificationService: NotificationService,
+		private noteDeleteService: NoteDeleteService,
 		private queueLoggerService: QueueLoggerService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('ai-moderation-gemini');
@@ -83,6 +89,7 @@ export class AiModerationGeminiProcessorService {
 		}
 
 		const systemActor = await this.systemAccountService.fetch('actor');
+		const action = meta.aiModerationViolationAction ?? 'flagOnly';
 
 		for (const note of notes) {
 			const content = this.buildNoteContent(note);
@@ -94,10 +101,7 @@ export class AiModerationGeminiProcessorService {
 			const result = await this.checkWithGemini(meta.aiModerationGeminiApiKey, rules, content);
 
 			if (result.violation) {
-				if (!note.aiModerationViolation) {
-					await this.notesRepository.update(note.id, { aiModerationViolation: true });
-				}
-
+				const actionLabel = await this.applyViolationAction(note, action);
 				const noteUrl = new URL(`/notes/${note.id}`, this.config.url).toString();
 				const confidence = typeof result.confidence === 'number'
 					? `\n- confidence: ${Math.max(0, Math.min(1, result.confidence)).toFixed(3)}`
@@ -106,6 +110,7 @@ export class AiModerationGeminiProcessorService {
 					`[AI Moderation / ${MODEL_NAME}] Server rule violation candidate detected.`,
 					`- noteId: ${note.id}`,
 					`- noteUrl: ${noteUrl}`,
+					`- action: ${actionLabel}`,
 					`- reason: ${result.reason || 'No reason provided.'}${confidence}`,
 				].join('\n');
 
@@ -120,14 +125,54 @@ export class AiModerationGeminiProcessorService {
 				this.notificationService.createNotification(note.userId, 'app', {
 					appAccessTokenId: null,
 					customHeader: '違反の可能性があるノートを確認中です',
-					customBody: 'あなたのノートにサーバールール違反の可能性が検出されました。モデレーターが確認中です。確認結果により削除される場合があります。',
+					customBody: `あなたのノートにサーバールール違反の可能性が検出されました。自動対応: ${actionLabel}。モデレーターが確認中です。`,
 					customIcon: new URL('/static-assets/tabler-badges/bell.png', this.config.url).toString(),
 				});
 
-				this.logger.warn(`Violation candidate detected noteId=${note.id}`);
+				this.logger.warn(`Violation candidate detected noteId=${note.id} action=${action}`);
 			}
 
 			await this.metaService.update({ aiModerationLastCheckedNoteId: note.id });
+		}
+	}
+
+	@bindThis
+	private async applyViolationAction(note: MiNote, action: AiModerationViolationAction): Promise<string> {
+		switch (action) {
+			case 'delete': {
+				const noteAuthor = await this.usersRepository.findOneByOrFail({ id: note.userId });
+				await this.noteDeleteService.delete(noteAuthor, note, true);
+				return 'ノートを削除';
+			}
+			case 'hideFromOthers': {
+				await this.notesRepository.update(note.id, {
+					visibility: 'specified',
+					visibleUserIds: [note.userId],
+					aiModerationViolation: true,
+				});
+				return '投稿者本人以外には非表示';
+			}
+			case 'homeOnly': {
+				if (note.visibility === 'public') {
+					await this.notesRepository.update(note.id, {
+						visibility: 'home',
+						aiModerationViolation: true,
+					});
+					return 'ホームタイムラインのみに制限';
+				}
+
+				if (!note.aiModerationViolation) {
+					await this.notesRepository.update(note.id, { aiModerationViolation: true });
+				}
+				return '既存の公開範囲を維持してフラグ付与';
+			}
+			case 'flagOnly':
+			default: {
+				if (!note.aiModerationViolation) {
+					await this.notesRepository.update(note.id, { aiModerationViolation: true });
+				}
+				return 'フラグ付与のみ';
+			}
 		}
 	}
 

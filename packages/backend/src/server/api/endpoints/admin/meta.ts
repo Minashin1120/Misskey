@@ -602,6 +602,11 @@ export const meta = {
 				optional: false, nullable: true,
 				format: 'id',
 			},
+			aiModerationViolationAction: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['delete', 'hideFromOthers', 'homeOnly', 'flagOnly'],
+			},
 			remoteNotesCleaningExpiryDaysForEachNotes: {
 				type: 'number',
 				optional: false, nullable: false,
@@ -771,6 +776,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				aiModerationEnabled: instance.aiModerationEnabled,
 				aiModerationGeminiApiKey: instance.aiModerationGeminiApiKey,
 				aiModerationLastCheckedNoteId: instance.aiModerationLastCheckedNoteId,
+				aiModerationViolationAction: instance.aiModerationViolationAction,
 				remoteNotesCleaningExpiryDaysForEachNotes: instance.remoteNotesCleaningExpiryDaysForEachNotes,
 				remoteNotesCleaningMaxProcessingDurationInMinutes: instance.remoteNotesCleaningMaxProcessingDurationInMinutes,
 				showRoleBadgesOfRemoteUsers: instance.showRoleBadgesOfRemoteUsers,

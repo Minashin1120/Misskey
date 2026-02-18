@@ -81,6 +81,7 @@ export * as 'admin/relays/list' from './endpoints/admin/relays/list.js';
 export * as 'admin/relays/remove' from './endpoints/admin/relays/remove.js';
 export * as 'admin/reset-password' from './endpoints/admin/reset-password.js';
 export * as 'admin/resolve-abuse-user-report' from './endpoints/admin/resolve-abuse-user-report.js';
+export * as 'admin/resolve-abuse-user-report-with-action' from './endpoints/admin/resolve-abuse-user-report-with-action.js';
 export * as 'admin/roles/assign' from './endpoints/admin/roles/assign.js';
 export * as 'admin/roles/create' from './endpoints/admin/roles/create.js';
 export * as 'admin/roles/delete' from './endpoints/admin/roles/delete.js';

@@ -20,6 +20,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkButton @click="resolve('accept')"><i class="ti ti-check" style="color: var(--MI_THEME-success)"></i> {{ i18n.ts._abuseUserReport.resolve }} ({{ i18n.ts._abuseUserReport.accept }})</MkButton>
 				<MkButton @click="resolve('reject')"><i class="ti ti-x" style="color: var(--MI_THEME-error)"></i> {{ i18n.ts._abuseUserReport.resolve }} ({{ i18n.ts._abuseUserReport.reject }})</MkButton>
 				<MkButton @click="resolve(null)"><i class="ti ti-slash"></i> {{ i18n.ts._abuseUserReport.resolve }} ({{ i18n.ts.other }})</MkButton>
+				<MkButton danger @click="runModerationAction('deleteNote')"><i class="ti ti-trash"></i> ノート削除</MkButton>
+				<MkButton danger @click="runModerationAction('suspendUser')"><i class="ti ti-user-off"></i> アカウント凍結</MkButton>
+				<MkButton @click="runModerationAction('warn')"><i class="ti ti-alert-triangle"></i> 警告</MkButton>
+				<MkButton @click="runModerationAction('restrictNoteTemporarily')"><i class="ti ti-clock-pause"></i> ノート一時停止</MkButton>
 			</template>
 			<template v-if="report.targetUser.host != null">
 				<MkButton :disabled="report.forwarded" primary @click="forward"><i class="ti ti-corner-up-right"></i> {{ i18n.ts._abuseUserReport.forward }}</MkButton>
@@ -122,6 +126,68 @@ function resolve(resolvedAs) {
 	}).then(() => {
 		emit('resolved', props.report.id);
 	});
+}
+
+async function runModerationAction(action: 'warn' | 'deleteNote' | 'suspendUser' | 'restrictNoteTemporarily') {
+	let noteIdOrUrl: string | null = null;
+	let restrictHours: number | null = null;
+
+	if (action === 'deleteNote') {
+		const noteInput = await os.inputText({
+			title: '削除対象ノート',
+			text: 'ノートIDまたはノートURLを入力してください。',
+			minLength: 1,
+		});
+		if (noteInput.canceled) return;
+		noteIdOrUrl = noteInput.result;
+	}
+
+	if (action === 'restrictNoteTemporarily') {
+		const durationInput = await os.inputNumber({
+			title: 'ノート一時停止の期間',
+			text: '停止時間（時間）を入力してください。',
+			default: 24,
+		});
+		if (durationInput.canceled) return;
+		if (durationInput.result <= 0) {
+			os.alert({
+				type: 'error',
+				text: '1以上の時間を指定してください。',
+			});
+			return;
+		}
+		restrictHours = Math.floor(durationInput.result);
+	}
+
+	const reasonInput = await os.inputText({
+		title: 'ユーザーへ通知する理由',
+		text: '実行理由を入力してください（空でも可）。入力内容は対象ユーザーへのダイアログに表示されます。',
+		default: '',
+	});
+	if (reasonInput.canceled) return;
+
+	const actionLabel = action === 'warn' ? '警告'
+		: action === 'deleteNote' ? 'ノート削除'
+			: action === 'suspendUser' ? 'アカウント凍結'
+				: 'ノート一時停止';
+
+	const confirmed = await os.confirm({
+		type: 'warning',
+		text: `「${actionLabel}」を実行し、通報を是認で解決します。よろしいですか？`,
+	});
+	if (confirmed.canceled) return;
+
+	await os.apiWithDialog('admin/resolve-abuse-user-report-with-action' as any, {
+		reportId: props.report.id,
+		resolvedAs: 'accept',
+		action,
+		reason: reasonInput.result,
+		noteIdOrUrl,
+		restrictHours,
+		notifyTarget: true,
+	});
+
+	emit('resolved', props.report.id);
 }
 
 function forward() {

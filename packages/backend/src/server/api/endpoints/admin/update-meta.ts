@@ -71,7 +71,7 @@ export const paramDef = {
 		clientOptions: { type: 'object', nullable: false },
 		cacheRemoteFiles: { type: 'boolean' },
 		cacheRemoteSensitiveFiles: { type: 'boolean' },
-                blockRemoteSensitiveNotes: { type: 'boolean' },
+		blockRemoteSensitiveNotes: { type: 'boolean' },
 		emailRequiredForSignup: { type: 'boolean' },
 		enableHcaptcha: { type: 'boolean' },
 		hcaptchaSiteKey: { type: 'string', nullable: true },
@@ -344,6 +344,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.cacheRemoteSensitiveFiles !== undefined) {
 				set.cacheRemoteSensitiveFiles = ps.cacheRemoteSensitiveFiles;
+			}
+
+			if (ps.blockRemoteSensitiveNotes !== undefined) {
+				set.blockRemoteSensitiveNotes = ps.blockRemoteSensitiveNotes;
 			}
 
 			if (ps.emailRequiredForSignup !== undefined) {

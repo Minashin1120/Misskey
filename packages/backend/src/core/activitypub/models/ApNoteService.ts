@@ -227,12 +227,15 @@ export class ApNoteService {
 
 		// 添付ファイル
 		const files: MiDriveFile[] = [];
+		if (this.meta.blockRemoteSensitiveNotes && (note.sensitive === true || cw != null)) {
+			throw new IdentifiableError('d450b8a9-48e4-4dab-ae36-f4db763fda7c', 'Note is sensitive/CW and blockRemoteSensitiveNotes is enabled');
+		}
 
 		for (const attach of toArray(note.attachment)) {
 			attach.sensitive ??= note.sensitive;
-                        if (this.meta.blockRemoteSensitiveNotes && attach.sensitive) {
-                                throw new IdentifiableError('d450b8a9-48e4-4dab-ae36-f4db763fda7c', 'Note contains sensitive attachment and blockRemoteSensitiveNotes is enabled');
-                        }
+			if (this.meta.blockRemoteSensitiveNotes && attach.sensitive) {
+				throw new IdentifiableError('d450b8a9-48e4-4dab-ae36-f4db763fda7c', 'Note contains sensitive attachment and blockRemoteSensitiveNotes is enabled');
+			}
 			const file = await this.apImageService.resolveImage(actor, attach);
 			if (file) files.push(file);
 		}

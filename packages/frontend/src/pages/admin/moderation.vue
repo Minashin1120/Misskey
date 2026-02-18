@@ -26,8 +26,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<SearchMarker :keywords="['sensitive', 'remote', 'block']">
 					<MkSwitch v-model="blockRemoteSensitiveNotes" @change="onChange_blockRemoteSensitiveNotes">
-						<template #label><SearchLabel>{{ i18n.ts.blockRemoteSensitiveNotes }}</SearchLabel></template>
-						<template #caption><SearchText>{{ i18n.ts.blockRemoteSensitiveNotesDescription }}</SearchText></template>
+						<template #label><SearchLabel>{{ i18n.ts._serverSettings.blockRemoteSensitiveNotes }}</SearchLabel></template>
+						<template #caption><SearchText>{{ i18n.ts._serverSettings.blockRemoteSensitiveNotesDescription }}</SearchText></template>
 					</MkSwitch>
 				</SearchMarker>
 

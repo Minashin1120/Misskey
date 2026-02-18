@@ -762,16 +762,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.showRoleBadgesOfRemoteUsers = ps.showRoleBadgesOfRemoteUsers;
 			}
 
-			const before = await this.metaService.fetch(true);
+			if (Object.keys(set).length > 0) {
+				const before = await this.metaService.fetch(true);
 
-			await this.metaService.update(set);
+				await this.metaService.update(set);
 
-			const after = await this.metaService.fetch(true);
+				const after = await this.metaService.fetch(true);
 
-			this.moderationLogService.log(me, 'updateServerSettings', {
-				before,
-				after,
-			});
+				this.moderationLogService.log(me, 'updateServerSettings', {
+					before,
+					after,
+				});
+			}
 
 			if (ps.runAiModerationGeminiScanNow === true) {
 				await this.queueService.createAiModerationGeminiJob(true);

@@ -36,6 +36,35 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<XServerRules/>
 
+				<SearchMarker :keywords="['ai', 'gemini', 'moderation', 'rules']">
+					<MkFolder>
+						<template #icon><SearchIcon><i class="ti ti-sparkles"></i></SearchIcon></template>
+						<template #label><SearchLabel>AI Rule Moderation (Gemini)</SearchLabel></template>
+
+						<div class="_gaps">
+							<MkSwitch :modelValue="aiModerationEnabled" @update:modelValue="onChange_aiModerationEnabled">
+								<template #label><SearchLabel>Enable periodic rule scan</SearchLabel></template>
+								<template #caption>Scan new posts with Gemini 2.5 Flash-Lite and report violation candidates.</template>
+							</MkSwitch>
+
+							<MkInput v-model="aiModerationGeminiApiKey" type="password" autocomplete="off">
+								<template #label>Gemini API key</template>
+								<template #caption>Google AI Studio API key. Leave empty to stop external requests.</template>
+							</MkInput>
+
+							<MkButton primary @click="save_aiModerationGeminiApiKey">{{ i18n.ts.save }}</MkButton>
+
+							<div v-if="aiModerationLastCheckedNoteId" class="_fullinfo">
+								Last scanned note ID: <code>{{ aiModerationLastCheckedNoteId }}</code>
+							</div>
+
+							<div class="_fullinfo">
+								Detected violations are sent as reports. Review from <MkA class="_link" to="/admin/abuses">{{ i18n.ts.abuseReports }}</MkA>
+							</div>
+						</div>
+					</MkFolder>
+				</SearchMarker>
+
 				<SearchMarker :keywords="['preserved', 'usernames']">
 					<MkFolder>
 						<template #icon><SearchIcon><i class="ti ti-lock-star"></i></SearchIcon></template>
@@ -167,11 +196,14 @@ import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import MkButton from '@/components/MkButton.vue';
-import FormLink from '@/components/form/link.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSelect from '@/components/MkSelect.vue';
 
-const meta = await misskeyApi('admin/meta');
+const meta = await misskeyApi('admin/meta') as Misskey.Endpoints['admin/meta']['res'] & {
+	aiModerationEnabled: boolean;
+	aiModerationGeminiApiKey: string | null;
+	aiModerationLastCheckedNoteId: string | null;
+};
 
 const enableRegistration = ref(!meta.disableRegistration);
 const emailRequiredForSignup = ref(meta.emailRequiredForSignup);
@@ -194,6 +226,9 @@ const preservedUsernames = ref(meta.preservedUsernames.join('\n'));
 const blockedHosts = ref(meta.blockedHosts.join('\n'));
 const silencedHosts = ref(meta.silencedHosts?.join('\n') ?? '');
 const mediaSilencedHosts = ref(meta.mediaSilencedHosts.join('\n'));
+const aiModerationEnabled = ref(!!meta.aiModerationEnabled);
+const aiModerationGeminiApiKey = ref(meta.aiModerationGeminiApiKey ?? '');
+const aiModerationLastCheckedNoteId = ref(meta.aiModerationLastCheckedNoteId ?? '');
 
 async function onChange_enableRegistration(value: boolean) {
 	if (value) {
@@ -288,6 +323,27 @@ function save_silencedHosts() {
 function save_mediaSilencedHosts() {
 	os.apiWithDialog('admin/update-meta', {
 		mediaSilencedHosts: mediaSilencedHosts.value.split('\n') || [],
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_aiModerationEnabled(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		aiModerationEnabled: value,
+	} as Misskey.Endpoints['admin/update-meta']['req'] & {
+		aiModerationEnabled: boolean;
+	}).then(() => {
+		aiModerationEnabled.value = value;
+		fetchInstance(true);
+	});
+}
+
+function save_aiModerationGeminiApiKey() {
+	os.apiWithDialog('admin/update-meta', {
+		aiModerationGeminiApiKey: aiModerationGeminiApiKey.value.trim() === '' ? null : aiModerationGeminiApiKey.value,
+	} as Misskey.Endpoints['admin/update-meta']['req'] & {
+		aiModerationGeminiApiKey: string | null;
 	}).then(() => {
 		fetchInstance(true);
 	});

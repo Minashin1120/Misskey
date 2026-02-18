@@ -1757,6 +1757,14 @@ _serverSettings:
     all: "Everything is public"
     localOnly: "Only local content is published, remote content is kept private"
     none: "Everything is private"
+_aiModerationGemini:
+  title: "AI rule moderation (Gemini)"
+  enable: "Enable periodic rule scan"
+  enableDescription: "Scan new posts with Gemini 2.5 Flash-Lite and report violation candidates to moderators."
+  apiKey: "Gemini API key"
+  apiKeyDescription: "Google AI Studio API key. Leave empty to disable requests."
+  lastCheckedNoteId: "Last scanned note ID"
+  reviewHint: "Detected violations are sent as abuse reports. Review and take action from"
 _accountMigration:
   moveFrom: "Migrate another account to this one"
   moveFromSub: "Create alias to another account"

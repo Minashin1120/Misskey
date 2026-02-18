@@ -1782,6 +1782,15 @@ _serverSettings:
     localOnly: "ローカルコンテンツのみ公開し、リモートコンテンツは非公開"
     none: "全て非公開"
 
+_aiModerationGemini:
+  title: "AIルールモデレーション（Gemini）"
+  enable: "定期ルールスキャンを有効にする"
+  enableDescription: "Gemini 2.5 Flash-Liteで新規投稿を定期チェックし、違反候補を通報として送信します。"
+  apiKey: "Gemini APIキー"
+  apiKeyDescription: "Google AI StudioのAPIキー。空にするとAPIリクエストは停止します。"
+  lastCheckedNoteId: "最終チェック済みノートID"
+  reviewHint: "検出された違反候補は通報として届きます。確認と対応は"
+
 _accountMigration:
   moveFrom: "別のアカウントからこのアカウントに移行"
   moveFromSub: "別のアカウントへエイリアスを作成"

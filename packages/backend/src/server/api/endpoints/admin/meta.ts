@@ -585,6 +585,19 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			aiModerationEnabled: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			aiModerationGeminiApiKey: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			aiModerationLastCheckedNoteId: {
+				type: 'string',
+				optional: false, nullable: true,
+				format: 'id',
+			},
 			remoteNotesCleaningExpiryDaysForEachNotes: {
 				type: 'number',
 				optional: false, nullable: false,
@@ -750,6 +763,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				signToActivityPubGet: instance.signToActivityPubGet,
 				allowExternalApRedirect: instance.allowExternalApRedirect,
 				enableRemoteNotesCleaning: instance.enableRemoteNotesCleaning,
+				aiModerationEnabled: instance.aiModerationEnabled,
+				aiModerationGeminiApiKey: instance.aiModerationGeminiApiKey,
+				aiModerationLastCheckedNoteId: instance.aiModerationLastCheckedNoteId,
 				remoteNotesCleaningExpiryDaysForEachNotes: instance.remoteNotesCleaningExpiryDaysForEachNotes,
 				remoteNotesCleaningMaxProcessingDurationInMinutes: instance.remoteNotesCleaningMaxProcessingDurationInMinutes,
 				showRoleBadgesOfRemoteUsers: instance.showRoleBadgesOfRemoteUsers,

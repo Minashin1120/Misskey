@@ -84,6 +84,10 @@ const REPEATABLE_SYSTEM_JOB_DEF = [{
 	name: 'cleanRemoteNotes',
 	// 毎日午前4時に起動(最も人の少ない時間帯)
 	pattern: '0 4 * * *',
+}, {
+	name: 'aiModerationGemini',
+	// 10分ごと
+	pattern: '*/10 * * * *',
 }];
 
 @Injectable()

@@ -707,6 +707,24 @@ export class MiMeta {
 	})
 	public enableRemoteNotesCleaning: boolean;
 
+	@Column('boolean', {
+		default: false,
+	})
+	public aiModerationEnabled: boolean;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+		default: null,
+	})
+	public aiModerationGeminiApiKey: string | null;
+
+	@Column({
+		...id(),
+		nullable: true,
+	})
+	public aiModerationLastCheckedNoteId: string | null;
+
 	@Column('integer', {
 		default: 60, // minutes
 	})

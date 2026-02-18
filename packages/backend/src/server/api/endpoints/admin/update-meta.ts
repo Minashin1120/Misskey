@@ -207,6 +207,8 @@ export const paramDef = {
 		signToActivityPubGet: { type: 'boolean' },
 		allowExternalApRedirect: { type: 'boolean' },
 		enableRemoteNotesCleaning: { type: 'boolean' },
+		aiModerationEnabled: { type: 'boolean' },
+		aiModerationGeminiApiKey: { type: 'string', nullable: true },
 		remoteNotesCleaningExpiryDaysForEachNotes: { type: 'number' },
 		remoteNotesCleaningMaxProcessingDurationInMinutes: { type: 'number' },
 		showRoleBadgesOfRemoteUsers: { type: 'boolean' },
@@ -734,6 +736,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.enableRemoteNotesCleaning !== undefined) {
 				set.enableRemoteNotesCleaning = ps.enableRemoteNotesCleaning;
+			}
+
+			if (ps.aiModerationEnabled !== undefined) {
+				set.aiModerationEnabled = ps.aiModerationEnabled;
+			}
+
+			if (ps.aiModerationGeminiApiKey !== undefined) {
+				const value = (ps.aiModerationGeminiApiKey ?? '').trim();
+				set.aiModerationGeminiApiKey = value === '' ? null : value;
 			}
 
 			if (ps.remoteNotesCleaningExpiryDaysForEachNotes !== undefined) {

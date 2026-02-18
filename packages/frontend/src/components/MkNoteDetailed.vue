@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		{{ i18n.ts.deletedNote }}
 	</div>
 	<template v-else>
-		<article :class="$style.note" @contextmenu.stop="onContextmenu">
+		<article :class="[$style.note, { [$style.noteViolation]: hasAiModerationViolation }]" @contextmenu.stop="onContextmenu">
 			<header :class="$style.noteHeader">
 				<MkAvatar :class="$style.noteHeaderAvatar" :user="appearNote.user" indicator link preview/>
 				<div :class="$style.noteHeaderBody">
@@ -77,6 +77,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</header>
 			<div :class="$style.noteContent">
+				<div v-if="hasAiModerationViolation" :class="$style.aiModerationWarning">違反フラグが付与されています</div>
 				<p v-if="appearNote.cw != null" :class="$style.cw">
 					<Mfm
 						v-if="appearNote.cw != ''"
@@ -337,6 +338,7 @@ const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceT
 const conversation = ref<Misskey.entities.Note[]>([]);
 const replies = ref<Misskey.entities.Note[]>([]);
 const canRenote = computed(() => ['public', 'home'].includes(appearNote.visibility) || appearNote.userId === $i?.id);
+const hasAiModerationViolation = computed(() => (appearNote as Misskey.entities.Note & { aiModerationViolation?: boolean }).aiModerationViolation === true);
 
 useGlobalEvent('noteDeleted', (noteId) => {
 	if (noteId === note.id || noteId === appearNote.id) {
@@ -708,6 +710,22 @@ function loadConversation() {
 	&:hover > .main > .footer > .button {
 		opacity: 1;
 	}
+}
+
+.noteViolation {
+	border: 1px solid var(--MI_THEME-error);
+	border-radius: 10px;
+}
+
+.aiModerationWarning {
+	display: inline-block;
+	margin-bottom: 12px;
+	padding: 4px 8px;
+	border: 1px solid var(--MI_THEME-error);
+	border-radius: 6px;
+	color: var(--MI_THEME-error);
+	font-size: 75%;
+	font-weight: 700;
 }
 
 .noteHeader {

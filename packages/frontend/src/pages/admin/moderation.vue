@@ -258,6 +258,14 @@ function onChange_emailRequiredForSignup(value: boolean) {
 	os.apiWithDialog('admin/update-meta', {
 		emailRequiredForSignup: value,
 	}).then(() => {
+
+function onChange_blockRemoteSensitiveNotes(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		blockRemoteSensitiveNotes: value,
+	} as any).then(() => {
+		fetchInstance(true);
+	});
+}
 		fetchInstance(true);
 	});
 }

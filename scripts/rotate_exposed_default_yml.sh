@@ -23,12 +23,14 @@ fi
 
 DB_PASS="$(openssl rand -base64 48 | tr -d "\n")"
 SETUP_PASS="$(openssl rand -base64 48 | tr -dc "A-Za-z0-9" | head -c 32)"
+DB_PASS_ESCAPED="$(printf '%s' "${DB_PASS}" | sed -e 's/[\\&|]/\\&/g')"
+SETUP_PASS_ESCAPED="$(printf '%s' "${SETUP_PASS}" | sed -e 's/[\\&|]/\\&/g')"
 
 sudo -u misskey -H bash -lc "cp -a '${CONFIG_PATH}' '${BACKUP_PATH}'"
 
 sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE misskey WITH PASSWORD '${DB_PASS}';"
 
-sudo -u misskey -H bash -lc "sed -i -E -e 's|^  pass: .*|  pass: ${DB_PASS}|' -e 's|^setupPassword: .*|setupPassword: ${SETUP_PASS}|' '${CONFIG_PATH}'"
+sudo -u misskey -H bash -lc "sed -i -E -e 's|^  pass: .*|  pass: ${DB_PASS_ESCAPED}|' -e 's|^setupPassword: .*|setupPassword: ${SETUP_PASS_ESCAPED}|' '${CONFIG_PATH}'"
 
 printf '%s\n' "${DB_PASS}" > /root/misskey_db_password.txt
 printf '%s\n' "${SETUP_PASS}" > /root/misskey_setup_password.txt

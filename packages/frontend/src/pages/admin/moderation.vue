@@ -12,8 +12,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkSwitch :modelValue="enableRegistration" @update:modelValue="onChange_enableRegistration">
 						<template #label><SearchLabel>{{ i18n.ts._serverSettings.openRegistration }}</SearchLabel></template>
 						<template #caption>
-							<div><SearchText>{{ i18n.ts._serverSettings.thisSettingWillAutomaticallyOffWhenModeratorsInactive }}</SearchText></div>
-							<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> <SearchText>{{ i18n.ts._serverSettings.openRegistrationWarning }}</SearchText></div>
+						<div><SearchText>{{ i18n.ts._serverSettings.thisSettingWillAutomaticallyOffWhenModeratorsInactive }}</SearchText></div>
+						<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> <SearchText>{{ i18n.ts._serverSettings.openRegistrationWarning }}</SearchText></div>
 						</template>
 					</MkSwitch>
 				</SearchMarker>
@@ -24,12 +24,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 				</SearchMarker>
 
+				<SearchMarker :keywords="['sensitive', 'remote', 'block']">
+					<MkSwitch v-model="blockRemoteSensitiveNotes" @change="onChange_blockRemoteSensitiveNotes">
+						<template #label><SearchLabel>{{ i18n.ts.blockRemoteSensitiveNotes }}</SearchLabel></template>
+						<template #caption><SearchText>{{ i18n.ts.blockRemoteSensitiveNotesDescription }}</SearchText></template>
+					</MkSwitch>
+				</SearchMarker>
+
 				<SearchMarker :keywords="['ugc', 'content', 'visibility', 'visitor', 'guest']">
 					<MkSelect v-model="ugcVisibilityForVisitor" :items="ugcVisibilityForVisitorDef" @update:modelValue="onChange_ugcVisibilityForVisitor">
 						<template #label><SearchLabel>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor }}</SearchLabel></template>
 						<template #caption>
-							<div><SearchText>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor_description }}</SearchText></div>
-							<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> <SearchText>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor_description2 }}</SearchText></div>
+						<div><SearchText>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor_description }}</SearchText></div>
+						<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> <SearchText>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor_description2 }}</SearchText></div>
 						</template>
 					</MkSelect>
 				</SearchMarker>
@@ -42,28 +49,28 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>AIルールモデレーション（Gemini）</SearchLabel></template>
 
 						<div class="_gaps">
-							<MkSwitch :modelValue="aiModerationEnabled" @update:modelValue="onChange_aiModerationEnabled">
-								<template #label><SearchLabel>定期ルールスキャンを有効にする</SearchLabel></template>
-								<template #caption>Gemini 2.5 Flash-Liteで新規投稿を定期チェックし、違反候補を通報として送信します。</template>
-							</MkSwitch>
+						<MkSwitch :modelValue="aiModerationEnabled" @update:modelValue="onChange_aiModerationEnabled">
+						<template #label><SearchLabel>定期ルールスキャンを有効にする</SearchLabel></template>
+						<template #caption>Gemini 2.5 Flash-Liteで新規投稿を定期チェックし、違反候補を通報として送信します。</template>
+						</MkSwitch>
 
-							<MkInput v-model="aiModerationGeminiApiKey" type="password" autocomplete="off">
-								<template #label>Gemini APIキー</template>
-								<template #caption>Google AI StudioのAPIキー。空にするとAPIリクエストは停止します。</template>
-							</MkInput>
+						<MkInput v-model="aiModerationGeminiApiKey" type="password" autocomplete="off">
+						<template #label>Gemini APIキー</template>
+						<template #caption>Google AI StudioのAPIキー。空にするとAPIリクエストは停止します。</template>
+						</MkInput>
 
-							<MkButton primary @click="save_aiModerationGeminiApiKey">{{ i18n.ts.save }}</MkButton>
-							<MkButton :disabled="aiModerationManualScanRunning" @click="run_aiModerationGeminiScanNow">
-								{{ aiModerationManualScanRunning ? 'スキャンを実行中...' : '今すぐスキャンを実行' }}
-							</MkButton>
+						<MkButton primary @click="save_aiModerationGeminiApiKey">{{ i18n.ts.save }}</MkButton>
+						<MkButton :disabled="aiModerationManualScanRunning" @click="run_aiModerationGeminiScanNow">
+						{{ aiModerationManualScanRunning ? 'スキャンを実行中...' : '今すぐスキャンを実行' }}
+						</MkButton>
 
-							<div v-if="aiModerationLastCheckedNoteId" class="_fullinfo">
-								最終チェック済みノートID: <code>{{ aiModerationLastCheckedNoteId }}</code>
-							</div>
+						<div v-if="aiModerationLastCheckedNoteId" class="_fullinfo">
+						 最終チェック済みノートID: <code>{{ aiModerationLastCheckedNoteId }}</code>
+						</div>
 
-							<div class="_fullinfo">
-								検出された違反候補は通報として届きます。確認と対応は <MkA class="_link" to="/admin/abuses">{{ i18n.ts.abuseReports }}</MkA>
-							</div>
+						<div class="_fullinfo">
+						 検出された違反候補は通報として届きます。確認と対応は <MkA class="_link" to="/admin/abuses">{{ i18n.ts.abuseReports }}</MkA>
+						</div>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -74,10 +81,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts.preservedUsernames }}</SearchLabel></template>
 
 						<div class="_gaps">
-							<MkTextarea v-model="preservedUsernames">
-								<template #caption>{{ i18n.ts.preservedUsernamesDescription }}</template>
-							</MkTextarea>
-							<MkButton primary @click="save_preservedUsernames">{{ i18n.ts.save }}</MkButton>
+						<MkTextarea v-model="preservedUsernames">
+						<template #caption>{{ i18n.ts.preservedUsernamesDescription }}</template>
+						</MkTextarea>
+						<MkButton primary @click="save_preservedUsernames">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -88,10 +95,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts.sensitiveWords }}</SearchLabel></template>
 
 						<div class="_gaps">
-							<MkTextarea v-model="sensitiveWords">
-								<template #caption>{{ i18n.ts.sensitiveWordsDescription }}<br>{{ i18n.ts.sensitiveWordsDescription2 }}</template>
-							</MkTextarea>
-							<MkButton primary @click="save_sensitiveWords">{{ i18n.ts.save }}</MkButton>
+						<MkTextarea v-model="sensitiveWords">
+						<template #caption>{{ i18n.ts.sensitiveWordsDescription }}<br>{{ i18n.ts.sensitiveWordsDescription2 }}</template>
+						</MkTextarea>
+						<MkButton primary @click="save_sensitiveWords">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -102,10 +109,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts.prohibitedWords }}</SearchLabel></template>
 
 						<div class="_gaps">
-							<MkTextarea v-model="prohibitedWords">
-								<template #caption>{{ i18n.ts.prohibitedWordsDescription }}<br>{{ i18n.ts.prohibitedWordsDescription2 }}</template>
-							</MkTextarea>
-							<MkButton primary @click="save_prohibitedWords">{{ i18n.ts.save }}</MkButton>
+						<MkTextarea v-model="prohibitedWords">
+						<template #caption>{{ i18n.ts.prohibitedWordsDescription }}<br>{{ i18n.ts.prohibitedWordsDescription2 }}</template>
+						</MkTextarea>
+						<MkButton primary @click="save_prohibitedWords">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -116,10 +123,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts.prohibitedWordsForNameOfUser }}</SearchLabel></template>
 
 						<div class="_gaps">
-							<MkTextarea v-model="prohibitedWordsForNameOfUser">
-								<template #caption>{{ i18n.ts.prohibitedWordsForNameOfUserDescription }}<br>{{ i18n.ts.prohibitedWordsDescription2 }}</template>
-							</MkTextarea>
-							<MkButton primary @click="save_prohibitedWordsForNameOfUser">{{ i18n.ts.save }}</MkButton>
+						<MkTextarea v-model="prohibitedWordsForNameOfUser">
+						<template #caption>{{ i18n.ts.prohibitedWordsForNameOfUserDescription }}<br>{{ i18n.ts.prohibitedWordsDescription2 }}</template>
+						</MkTextarea>
+						<MkButton primary @click="save_prohibitedWordsForNameOfUser">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -130,10 +137,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts.hiddenTags }}</SearchLabel></template>
 
 						<div class="_gaps">
-							<MkTextarea v-model="hiddenTags">
-								<template #caption>{{ i18n.ts.hiddenTagsDescription }}</template>
-							</MkTextarea>
-							<MkButton primary @click="save_hiddenTags">{{ i18n.ts.save }}</MkButton>
+						<MkTextarea v-model="hiddenTags">
+						<template #caption>{{ i18n.ts.hiddenTagsDescription }}</template>
+						</MkTextarea>
+						<MkButton primary @click="save_hiddenTags">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -144,10 +151,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts.silencedInstances }}</SearchLabel></template>
 
 						<div class="_gaps">
-							<MkTextarea v-model="silencedHosts">
-								<template #caption>{{ i18n.ts.silencedInstancesDescription }}</template>
-							</MkTextarea>
-							<MkButton primary @click="save_silencedHosts">{{ i18n.ts.save }}</MkButton>
+						<MkTextarea v-model="silencedHosts">
+						<template #caption>{{ i18n.ts.silencedInstancesDescription }}</template>
+						</MkTextarea>
+						<MkButton primary @click="save_silencedHosts">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -158,10 +165,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts.mediaSilencedInstances }}</SearchLabel></template>
 
 						<div class="_gaps">
-							<MkTextarea v-model="mediaSilencedHosts">
-								<template #caption>{{ i18n.ts.mediaSilencedInstancesDescription }}</template>
-							</MkTextarea>
-							<MkButton primary @click="save_mediaSilencedHosts">{{ i18n.ts.save }}</MkButton>
+						<MkTextarea v-model="mediaSilencedHosts">
+						<template #caption>{{ i18n.ts.mediaSilencedInstancesDescription }}</template>
+						</MkTextarea>
+						<MkButton primary @click="save_mediaSilencedHosts">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -172,10 +179,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts.blockedInstances }}</SearchLabel></template>
 
 						<div class="_gaps">
-							<MkTextarea v-model="blockedHosts">
-								<template #caption>{{ i18n.ts.blockedInstancesDescription }}</template>
-							</MkTextarea>
-							<MkButton primary @click="save_blockedHosts">{{ i18n.ts.save }}</MkButton>
+						<MkTextarea v-model="blockedHosts">
+						<template #caption>{{ i18n.ts.blockedInstancesDescription }}</template>
+						</MkTextarea>
+						<MkButton primary @click="save_blockedHosts">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -206,7 +213,7 @@ const meta = await misskeyApi('admin/meta') as Misskey.Endpoints['admin/meta']['
 	aiModerationEnabled: boolean;
 	aiModerationGeminiApiKey: string | null;
 	aiModerationLastCheckedNoteId: string | null;
-        blockRemoteSensitiveNotes: boolean;
+	blockRemoteSensitiveNotes: boolean;
 };
 
 const enableRegistration = ref(!meta.disableRegistration);
@@ -258,14 +265,14 @@ function onChange_emailRequiredForSignup(value: boolean) {
 	os.apiWithDialog('admin/update-meta', {
 		emailRequiredForSignup: value,
 	}).then(() => {
+		fetchInstance(true);
+	});
+}
 
 function onChange_blockRemoteSensitiveNotes(value: boolean) {
 	os.apiWithDialog('admin/update-meta', {
 		blockRemoteSensitiveNotes: value,
 	} as any).then(() => {
-		fetchInstance(true);
-	});
-}
 		fetchInstance(true);
 	});
 }

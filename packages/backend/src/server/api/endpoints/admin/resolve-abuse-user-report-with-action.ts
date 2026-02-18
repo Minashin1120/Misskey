@@ -122,16 +122,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.noSuchUser);
 			}
 
-			const normalizedReason = (ps.reason ?? '').trim();
-			let actionDetail = '対応のみ実施されました。';
-
-			switch (ps.action) {
-				case 'warn': {
-					actionDetail = '警告を行いました。';
-					break;
-				}
-				case 'deleteNote': {
-					const noteId = this.extractNoteId(ps.noteIdOrUrl);
+			                        const normalizedReason = (ps.reason ?? '').trim();
+			                        let actionDetail = '運営チームにより、一部の機能制限または対応が実施されました。';
+			
+			                        switch (ps.action) {
+			                                case 'warn': {
+			                                        actionDetail = '利用規約に抵触する行為が確認されたため、警告を発行しました。今後の活動にご注意ください。';
+			                                        break;
+			                                }
+			                                case 'deleteNote': {					const noteId = this.extractNoteId(ps.noteIdOrUrl);
 					if (noteId == null) {
 						throw new ApiError(meta.errors.invalidNote);
 					}
@@ -143,24 +142,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw err;
 					});
 
-					if (note.userId !== targetUser.id) {
-						throw new ApiError(meta.errors.noteNotOwnedByTarget);
-					}
-
-					await this.noteDeleteService.delete(targetUser, note, false, me);
-					actionDetail = `ノートを削除しました。 (#${note.id.toUpperCase()})`;
-					break;
-				}
-				case 'suspendUser': {
-					if (await this.roleService.isModerator(targetUser)) {
-						throw new ApiError(meta.errors.cannotSuspendModerator);
-					}
-
-					await this.userSuspendService.suspend(targetUser, me);
-					actionDetail = 'アカウントを凍結しました。';
-					break;
-				}
-				case 'restrictNoteTemporarily': {
+					                                        if (note.userId !== targetUser.id) {
+					                                                throw new ApiError(meta.errors.noteNotOwnedByTarget);
+					                                        }
+					
+					                                        await this.noteDeleteService.delete(targetUser, note, false, me);
+					                                        actionDetail = `規約違反に該当する内容が含まれていたため、対象のノートを削除しました。 (#${note.id.toUpperCase()})`;
+					                                        break;
+					                                }				case 'suspendUser': {
+					                                        if (await this.roleService.isModerator(targetUser)) {
+					                                                throw new ApiError(meta.errors.cannotSuspendModerator);
+					                                        }
+					
+					                                        await this.userSuspendService.suspend(targetUser, me);
+					                                        actionDetail = '重大な規約違反、または繰り返しの違反が確認されたため、アカウントを凍結しました。';
+					                                        break;
+					                                }				case 'restrictNoteTemporarily': {
 					if (ps.restrictHours == null || ps.restrictHours <= 0) {
 						throw new ApiError(meta.errors.invalidDuration);
 					}
@@ -172,12 +169,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw err;
 					});
 
-					const expiresAt = new Date(Date.now() + (ps.restrictHours * 60 * 60 * 1000));
-					await this.roleService.assign(targetUser.id, role.id, expiresAt, me);
-					actionDetail = `ノート投稿を一時停止しました。 (${ps.restrictHours}時間)`;
-					break;
-				}
-				default:
+					                                        const expiresAt = new Date(Date.now() + (ps.restrictHours * 60 * 60 * 1000));
+					                                        await this.roleService.assign(targetUser.id, role.id, expiresAt, me);
+					                                        actionDetail = `規約違反が確認されたため、一定期間ノートの投稿を制限しました。 (${ps.restrictHours}時間)`;
+					                                        break;
+					                                }				default:
 					break;
 			}
 
@@ -186,22 +182,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				resolvedAs: ps.resolvedAs ?? 'accept',
 			}], me);
 
-			if (ps.notifyTarget && targetUser.host == null) {
-				const reasonText = normalizedReason.length > 0 ? normalizedReason : '理由の記載はありません。';
-				const body = [
-					'通報に関するモデレーション対応が行われました。',
-					actionDetail,
-					'',
-					`理由: ${reasonText}`,
-					`通報ID: ${report.id}`,
-				].join('\n');
-
-				await this.announcementService.create({
-					title: 'モデレーション通知',
-					text: body,
-					imageUrl: null,
-					icon: 'warning',
-					display: 'dialog',
+			                        if (ps.notifyTarget && targetUser.host == null) {
+			                                const reasonText = normalizedReason.length > 0 ? normalizedReason : '（詳細理由は記載されていません）';
+			                                const body = [
+			                                        '運営チームより、あなたのアカウントに関するモデレーション対応のお知らせです。',
+			                                        actionDetail,
+			                                        '',
+			                                        `詳細理由: ${reasonText}`,
+			                                        `通報ID: ${report.id}`,
+			                                ].join('\n');
+			
+			                                await this.announcementService.create({
+			                                        title: '規約違反に関する重要なお知らせ',
+			                                        text: body,
+			                                        imageUrl: null,
+			                                        icon: 'warning',
+			                                        display: 'dialog',
 					forExistingUsers: false,
 					silence: false,
 					needConfirmationToRead: true,

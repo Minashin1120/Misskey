@@ -94,6 +94,11 @@ export class MiNote {
 	})
 	public localOnly: boolean;
 
+	@Column('boolean', {
+		default: false,
+	})
+	public aiModerationViolation: boolean;
+
 	@Column('varchar', {
 		length: 64, nullable: true,
 	})

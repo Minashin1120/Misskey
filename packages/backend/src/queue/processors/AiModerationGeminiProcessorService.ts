@@ -12,6 +12,7 @@ import { MetaService } from '@/core/MetaService.js';
 import { AbuseReportService } from '@/core/AbuseReportService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
+import { NotificationService } from '@/core/NotificationService.js';
 import type { MiNote, NotesRepository } from '@/models/_.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
@@ -39,6 +40,7 @@ export class AiModerationGeminiProcessorService {
 		private abuseReportService: AbuseReportService,
 		private httpRequestService: HttpRequestService,
 		private systemAccountService: SystemAccountService,
+		private notificationService: NotificationService,
 		private queueLoggerService: QueueLoggerService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('ai-moderation-gemini');
@@ -92,6 +94,10 @@ export class AiModerationGeminiProcessorService {
 			const result = await this.checkWithGemini(meta.aiModerationGeminiApiKey, rules, content);
 
 			if (result.violation) {
+				if (!note.aiModerationViolation) {
+					await this.notesRepository.update(note.id, { aiModerationViolation: true });
+				}
+
 				const noteUrl = new URL(`/notes/${note.id}`, this.config.url).toString();
 				const confidence = typeof result.confidence === 'number'
 					? `\n- confidence: ${Math.max(0, Math.min(1, result.confidence)).toFixed(3)}`
@@ -110,6 +116,13 @@ export class AiModerationGeminiProcessorService {
 					reporterHost: systemActor.host,
 					comment,
 				}]);
+
+				this.notificationService.createNotification(note.userId, 'app', {
+					appAccessTokenId: null,
+					customHeader: '違反の可能性があるノートを確認中です',
+					customBody: 'あなたのノートにサーバールール違反の可能性が検出されました。モデレーターが確認中です。確認結果により削除される場合があります。',
+					customIcon: null,
+				});
 
 				this.logger.warn(`Violation candidate detected noteId=${note.id}`);
 			}

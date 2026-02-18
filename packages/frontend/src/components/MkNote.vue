@@ -45,10 +45,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkAvatar :class="$style.collapsedRenoteTargetAvatar" :user="appearNote.user" link preview/>
 		<Mfm :text="getNoteSummary(appearNote)" :plain="true" :nowrap="true" :author="appearNote.user" :nyaize="'respect'" :class="$style.collapsedRenoteTargetText" @click="renoteCollapsed = false"/>
 	</div>
-	<article v-else :class="$style.article" @contextmenu.stop="onContextmenu">
+	<article v-else :class="[$style.article, { [$style.articleViolation]: hasAiModerationViolation }]" @contextmenu.stop="onContextmenu">
 		<div v-if="appearNote.channel" :class="$style.colorBar" :style="{ background: appearNote.channel.color }"></div>
 		<MkAvatar :class="[$style.avatar, prefer.s.useStickyIcons ? $style.useSticky : null]" :user="appearNote.user" :link="!mock" :preview="!mock"/>
 		<div :class="$style.main">
+			<div v-if="hasAiModerationViolation" :class="$style.aiModerationWarning">違反フラグが付与されています</div>
 			<MkNoteHeader :note="appearNote" :mini="true"/>
 			<MkInstanceTicker v-if="showTicker" :host="appearNote.user.host" :instance="appearNote.user.instance"/>
 			<div style="container-type: inline-size;">
@@ -315,6 +316,7 @@ const translation = ref<Misskey.entities.NotesTranslateResponse | null>(null);
 const translating = ref(false);
 const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceTicker === 'remote' && appearNote.user.instance);
 const canRenote = computed(() => ['public', 'home'].includes(appearNote.visibility) || (appearNote.visibility === 'followers' && appearNote.userId === $i?.id));
+const hasAiModerationViolation = computed(() => (appearNote as Misskey.entities.Note & { aiModerationViolation?: boolean }).aiModerationViolation === true);
 const renoteCollapsed = ref(
 	prefer.s.collapseRenotes && isRenote && (
 		($i && ($i.id === note.userId || $i.id === appearNote.userId)) || // `||` must be `||`! See https://github.com/misskey-dev/misskey/issues/13131
@@ -878,6 +880,11 @@ function emitUpdReaction(emoji: string, delta: number) {
 	padding: 28px 32px;
 }
 
+.articleViolation {
+	border: 1px solid var(--MI_THEME-error);
+	border-radius: 10px;
+}
+
 .colorBar {
 	position: absolute;
 	top: 8px;
@@ -905,6 +912,17 @@ function emitUpdReaction(emoji: string, delta: number) {
 .main {
 	flex: 1;
 	min-width: 0;
+}
+
+.aiModerationWarning {
+	display: inline-block;
+	margin-bottom: 8px;
+	padding: 4px 8px;
+	border: 1px solid var(--MI_THEME-error);
+	border-radius: 6px;
+	color: var(--MI_THEME-error);
+	font-size: 85%;
+	font-weight: 700;
 }
 
 .cw {

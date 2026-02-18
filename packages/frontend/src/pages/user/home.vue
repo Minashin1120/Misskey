@@ -9,9 +9,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div ref="rootEl" class="ftskorzw" :class="{ wide: !narrow }" style="container-type: inline-size;">
 			<div class="main _gaps">
 				<div class="punished _panel" v-if="user.isSuspended"><i class="ti ti-alert-triangle" style="margin-right: 8px;"></i> このアカウントは規約違反のため凍結されています。</div>
-				<div class="punished _panel" v-if="user.isSilenced"><i class="ti ti-alert-triangle" style="margin-right: 8px;"></i> {{ i18n.ts.userSilenced }}</div>
+				<div class="punished _panel" v-if="user.isSilenced && !shouldHideSuspendedProfileContent"><i class="ti ti-alert-triangle" style="margin-right: 8px;"></i> {{ i18n.ts.userSilenced }}</div>
 
-				<div class="profile _gaps">
+				<div v-if="!shouldHideSuspendedProfileContent" class="profile _gaps">
 					<MkAccountMoved v-if="user.movedTo" :movedTo="user.movedTo"/>
 					<MkRemoteCaution v-if="user.host != null" :href="user.url ?? user.uri!"/>
 					<MkInfo v-if="user.host == null && user.username.includes('.')">{{ i18n.ts.isSystemAccount }}</MkInfo>
@@ -128,7 +128,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 				</div>
 
-				<div class="contents _gaps">
+				<div v-if="!shouldHideSuspendedProfileContent" class="contents _gaps">
 					<div v-if="user.pinnedNotes.length > 0" class="_gaps">
 						<MkNote v-for="note in user.pinnedNotes" :key="note.id" class="note _panel" :note="note" :pinned="true"/>
 					</div>
@@ -148,7 +148,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 				</div>
 			</div>
-			<div v-if="!narrow" class="sub _gaps" style="container-type: inline-size;">
+			<div v-if="!narrow && !shouldHideSuspendedProfileContent" class="sub _gaps" style="container-type: inline-size;">
 				<XFiles :key="user.id" :user="user" @showMore="emit('showMoreFiles')"/>
 				<XActivity :key="user.id" :user="user"/>
 			</div>
@@ -228,6 +228,7 @@ const memoDraft = ref(props.user.memo);
 const isEditingMemo = ref(false);
 const moderationNote = ref(props.user.moderationNote ?? '');
 const editModerationNote = ref(false);
+const shouldHideSuspendedProfileContent = computed(() => user.value.isSuspended && !iAmModerator);
 
 watch(moderationNote, async () => {
 	await misskeyApi('admin/update-user-note', { userId: props.user.id, text: moderationNote.value });

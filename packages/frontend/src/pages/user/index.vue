@@ -7,17 +7,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 <PageWithHeader v-model:tab="tab" :tabs="headerTabs" :actions="headerActions" :swipable="true">
 	<div v-if="user">
 		<XHome v-if="tab === 'home'" :user="user" @showMoreFiles="() => { tab = 'files'; }"/>
-		<XNotes v-else-if="tab === 'notes'" :user="user"/>
-		<XFiles v-else-if="tab === 'files'" :user="user"/>
-		<XActivity v-else-if="tab === 'activity'" :user="user"/>
-		<XAchievements v-else-if="tab === 'achievements'" :user="user"/>
-		<XReactions v-else-if="tab === 'reactions'" :user="user"/>
-		<XClips v-else-if="tab === 'clips'" :user="user"/>
-		<XLists v-else-if="tab === 'lists'" :user="user"/>
-		<XPages v-else-if="tab === 'pages'" :user="user"/>
-		<XFlashs v-else-if="tab === 'flashs'" :user="user"/>
-		<XGallery v-else-if="tab === 'gallery'" :user="user"/>
-		<XRaw v-else-if="tab === 'raw'" :user="user"/>
+		<XNotes v-else-if="canSeeSuspendedProfileContents && tab === 'notes'" :user="user"/>
+		<XFiles v-else-if="canSeeSuspendedProfileContents && tab === 'files'" :user="user"/>
+		<XActivity v-else-if="canSeeSuspendedProfileContents && tab === 'activity'" :user="user"/>
+		<XAchievements v-else-if="canSeeSuspendedProfileContents && tab === 'achievements'" :user="user"/>
+		<XReactions v-else-if="canSeeSuspendedProfileContents && tab === 'reactions'" :user="user"/>
+		<XClips v-else-if="canSeeSuspendedProfileContents && tab === 'clips'" :user="user"/>
+		<XLists v-else-if="canSeeSuspendedProfileContents && tab === 'lists'" :user="user"/>
+		<XPages v-else-if="canSeeSuspendedProfileContents && tab === 'pages'" :user="user"/>
+		<XFlashs v-else-if="canSeeSuspendedProfileContents && tab === 'flashs'" :user="user"/>
+		<XGallery v-else-if="canSeeSuspendedProfileContents && tab === 'gallery'" :user="user"/>
+		<XRaw v-else-if="canSeeSuspendedProfileContents && tab === 'raw'" :user="user"/>
 	</div>
 	<MkError v-else-if="error" @retry="fetchUser()"/>
 	<MkLoading v-else/>
@@ -61,6 +61,11 @@ const tab = ref(props.page);
 
 const user = ref<null | Misskey.entities.UserDetailed>(CTX_USER);
 const error = ref<any>(null);
+const canSeeSuspendedProfileContents = computed(() => {
+	if (user.value == null) return true;
+	if (!user.value.isSuspended) return true;
+	return Boolean($i && ($i.isAdmin || $i.isModerator));
+});
 
 function fetchUser(): void {
 	if (props.acct == null) return;
@@ -87,9 +92,25 @@ watch(() => props.acct, fetchUser, {
 	immediate: true,
 });
 
+watch(canSeeSuspendedProfileContents, (canSee) => {
+	if (!canSee && tab.value !== 'home') {
+		tab.value = 'home';
+	}
+}, { immediate: true });
+
 const headerActions = computed(() => []);
 
-const headerTabs = computed(() => user.value ? [{
+const headerTabs = computed(() => {
+	if (user.value == null) return [];
+	if (!canSeeSuspendedProfileContents.value) {
+		return [{
+			key: 'home',
+			title: i18n.ts.overview,
+			icon: 'ti ti-home',
+		}];
+	}
+
+	return [{
 	key: 'home',
 	title: i18n.ts.overview,
 	icon: 'ti ti-home',
@@ -137,7 +158,8 @@ const headerTabs = computed(() => user.value ? [{
 	key: 'raw',
 	title: 'Raw',
 	icon: 'ti ti-code',
-}] : []);
+}];
+});
 
 definePage(() => ({
 	title: i18n.ts.user,

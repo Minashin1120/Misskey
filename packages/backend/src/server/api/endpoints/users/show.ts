@@ -133,11 +133,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					return [];
 				}
 
-				const users = await this.usersRepository.findBy(isModerator ? {
+				const users = await this.usersRepository.findBy({
 					id: In(ps.userIds),
-				} : {
-					id: In(ps.userIds),
-					isSuspended: false,
 				});
 
 				// リクエストされた通りに並べ替え
@@ -170,7 +167,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					user = await this.usersRepository.findOneBy(q);
 				}
 
-				if (user == null || (!isModerator && user.isSuspended)) {
+				if (user == null) {
 					throw new ApiError(meta.errors.noSuchUser);
 				}
 

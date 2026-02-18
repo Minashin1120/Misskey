@@ -68,24 +68,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<div :class="$style.text">
 						<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
 						<MkA v-if="appearNote.replyId" :class="$style.replyIcon" :to="`/notes/${appearNote.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
-						<Mfm
-							v-if="appearNote.text"
-							:parsedNodes="parsed"
-							:text="appearNote.text"
-							:author="appearNote.user"
-							:nyaize="'respect'"
-							:emojiUrls="appearNote.emojis"
-							:enableEmojiMenu="true"
-							:enableEmojiMenuReaction="true"
-							class="_selectable"
-						/>
-						<div v-if="translating || translation" :class="$style.translation">
-							<MkLoading v-if="translating" mini/>
-							<div v-else-if="translation">
-								<b>{{ i18n.tsx.translatedFrom({ x: translation.sourceLang }) }}: </b>
-								<Mfm :text="translation.text" :author="appearNote.user" :nyaize="'respect'" :emojiUrls="appearNote.emojis" class="_selectable"/>
+						<template v-if="remoteSensitivePlaceholder">
+							<div :class="$style.remoteSensitivePlaceholder">
+								<div>{{ remoteSensitivePlaceholder.message }}</div>
+								<a :href="remoteSensitivePlaceholder.sourceUrl" target="_blank" rel="nofollow noopener noreferrer">{{ remoteSensitivePlaceholder.sourceUrl }}</a>
 							</div>
-						</div>
+						</template>
+						<template v-else>
+							<Mfm
+								v-if="appearNote.text"
+								:parsedNodes="parsed"
+								:text="appearNote.text"
+								:author="appearNote.user"
+								:nyaize="'respect'"
+								:emojiUrls="appearNote.emojis"
+								:enableEmojiMenu="true"
+								:enableEmojiMenuReaction="true"
+								class="_selectable"
+							/>
+							<div v-if="translating || translation" :class="$style.translation">
+								<MkLoading v-if="translating" mini/>
+								<div v-else-if="translation">
+									<b>{{ i18n.tsx.translatedFrom({ x: translation.sourceLang }) }}: </b>
+									<Mfm :text="translation.text" :author="appearNote.user" :nyaize="'respect'" :emojiUrls="appearNote.emojis" class="_selectable"/>
+								</div>
+							</div>
+						</template>
 					</div>
 					<div v-if="appearNote.files && appearNote.files.length > 0" style="margin-top: 8px;">
 						<MkMediaList ref="galleryEl" :mediaList="appearNote.files"/>
@@ -241,6 +249,7 @@ import { showMovedDialog } from '@/utility/show-moved-dialog.js';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { focusPrev, focusNext } from '@/utility/focus.js';
 import { getAppearNote } from '@/utility/get-appear-note.js';
+import { getRemoteSensitivePlaceholder } from '@/utility/get-remote-sensitive-placeholder.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
@@ -314,6 +323,7 @@ const hardMuted = ref(props.withHardMute && checkMute(appearNote, $i?.hardMutedW
 const showSoftWordMutedWord = computed(() => prefer.s.showSoftWordMutedWord);
 const translation = ref<Misskey.entities.NotesTranslateResponse | null>(null);
 const translating = ref(false);
+const remoteSensitivePlaceholder = computed(() => getRemoteSensitivePlaceholder(appearNote));
 const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceTicker === 'remote' && appearNote.user.instance);
 const canRenote = computed(() => ['public', 'home'].includes(appearNote.visibility) || (appearNote.visibility === 'followers' && appearNote.userId === $i?.id));
 const hasAiModerationViolation = computed(() => (appearNote as Misskey.entities.Note & { aiModerationViolation?: boolean }).aiModerationViolation === true);
@@ -993,6 +1003,19 @@ function emitUpdReaction(emoji: string, delta: number) {
 	border-radius: var(--MI-radius);
 	padding: 12px;
 	margin-top: 8px;
+}
+
+.remoteSensitivePlaceholder {
+	padding: 10px 12px;
+	border-radius: 8px;
+	border: 1px solid var(--MI_THEME-divider);
+	background: color-mix(in srgb, var(--MI_THEME-panel) 88%, var(--MI_THEME-warn) 12%);
+
+	> a {
+		display: inline-block;
+		margin-top: 6px;
+		word-break: break-all;
+	}
 }
 
 .urlPreview {

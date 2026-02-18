@@ -6,11 +6,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="[$style.root, { [$style.collapsed]: collapsed }]">
 	<div>
-		<span v-if="note.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
-		<span v-if="note.deletedAt" style="opacity: 0.5">({{ i18n.ts.deletedNote }})</span>
-		<MkA v-if="note.replyId" :class="$style.reply" :to="`/notes/${note.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
-		<Mfm v-if="note.text" :text="note.text" :author="note.user" :nyaize="'respect'" :emojiUrls="note.emojis"/>
-		<MkA v-if="note.renoteId" :class="$style.rp" :to="`/notes/${note.renoteId}`">RN: ...</MkA>
+		<template v-if="remoteSensitivePlaceholder">
+			<div :class="$style.remoteSensitivePlaceholder">
+				<div>{{ remoteSensitivePlaceholder.message }}</div>
+				<a :href="remoteSensitivePlaceholder.sourceUrl" target="_blank" rel="nofollow noopener noreferrer">{{ remoteSensitivePlaceholder.sourceUrl }}</a>
+			</div>
+		</template>
+		<template v-else>
+			<span v-if="note.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
+			<span v-if="note.deletedAt" style="opacity: 0.5">({{ i18n.ts.deletedNote }})</span>
+			<MkA v-if="note.replyId" :class="$style.reply" :to="`/notes/${note.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
+			<Mfm v-if="note.text" :text="note.text" :author="note.user" :nyaize="'respect'" :emojiUrls="note.emojis"/>
+			<MkA v-if="note.renoteId" :class="$style.rp" :to="`/notes/${note.renoteId}`">RN: ...</MkA>
+		</template>
 	</div>
 	<details v-if="note.files && note.files.length > 0">
 		<summary>({{ i18n.tsx.withNFiles({ n: note.files.length }) }})</summary>
@@ -44,12 +52,14 @@ import { shouldCollapsed } from '@@/js/collapsed.js';
 import MkMediaList from '@/components/MkMediaList.vue';
 import MkPoll from '@/components/MkPoll.vue';
 import { i18n } from '@/i18n.js';
+import { getRemoteSensitivePlaceholder } from '@/utility/get-remote-sensitive-placeholder.js';
 
 const props = defineProps<{
 	note: Misskey.entities.Note;
 }>();
 
 const isLong = shouldCollapsed(props.note, []);
+const remoteSensitivePlaceholder = getRemoteSensitivePlaceholder(props.note);
 
 const collapsed = ref(isLong);
 </script>
@@ -115,5 +125,19 @@ const collapsed = ref(isLong);
 	font-size: 0.8em;
 	border-radius: 999px;
 	box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+}
+
+.remoteSensitivePlaceholder {
+	padding: 10px 12px;
+	border-radius: 8px;
+	border: 1px solid var(--MI_THEME-divider);
+	background: color-mix(in srgb, var(--MI_THEME-panel) 88%, var(--MI_THEME-warn) 12%);
+	font-size: 0.9em;
+
+	> a {
+		display: inline-block;
+		margin-top: 6px;
+		word-break: break-all;
+	}
 }
 </style>

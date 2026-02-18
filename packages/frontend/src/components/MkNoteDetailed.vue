@@ -92,25 +92,33 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-show="appearNote.cw == null || showContent">
 					<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
 					<MkA v-if="appearNote.replyId" :class="$style.noteReplyTarget" :to="`/notes/${appearNote.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
-					<Mfm
-						v-if="appearNote.text"
-						:parsedNodes="parsed"
-						:text="appearNote.text"
-						:author="appearNote.user"
-						:nyaize="'respect'"
-						:emojiUrls="appearNote.emojis"
-						:enableEmojiMenu="true"
-						:enableEmojiMenuReaction="true"
-						class="_selectable"
-					/>
-					<a v-if="appearNote.renote != null" :class="$style.rn">RN:</a>
-					<div v-if="translating || translation" :class="$style.translation">
-						<MkLoading v-if="translating" mini/>
-						<div v-else-if="translation">
-							<b>{{ i18n.tsx.translatedFrom({ x: translation.sourceLang }) }}: </b>
-							<Mfm :text="translation.text" :author="appearNote.user" :nyaize="'respect'" :emojiUrls="appearNote.emojis" class="_selectable"/>
+					<template v-if="remoteSensitivePlaceholder">
+						<div :class="$style.remoteSensitivePlaceholder">
+							<div>{{ remoteSensitivePlaceholder.message }}</div>
+							<a :href="remoteSensitivePlaceholder.sourceUrl" target="_blank" rel="nofollow noopener noreferrer">{{ remoteSensitivePlaceholder.sourceUrl }}</a>
 						</div>
-					</div>
+					</template>
+					<template v-else>
+						<Mfm
+							v-if="appearNote.text"
+							:parsedNodes="parsed"
+							:text="appearNote.text"
+							:author="appearNote.user"
+							:nyaize="'respect'"
+							:emojiUrls="appearNote.emojis"
+							:enableEmojiMenu="true"
+							:enableEmojiMenuReaction="true"
+							class="_selectable"
+						/>
+						<a v-if="appearNote.renote != null" :class="$style.rn">RN:</a>
+						<div v-if="translating || translation" :class="$style.translation">
+							<MkLoading v-if="translating" mini/>
+							<div v-else-if="translation">
+								<b>{{ i18n.tsx.translatedFrom({ x: translation.sourceLang }) }}: </b>
+								<Mfm :text="translation.text" :author="appearNote.user" :nyaize="'respect'" :emojiUrls="appearNote.emojis" class="_selectable"/>
+							</div>
+						</div>
+					</template>
 					<div v-if="appearNote.files && appearNote.files.length > 0">
 						<MkMediaList ref="galleryEl" :mediaList="appearNote.files"/>
 					</div>
@@ -276,6 +284,7 @@ import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { getAppearNote } from '@/utility/get-appear-note.js';
+import { getRemoteSensitivePlaceholder } from '@/utility/get-remote-sensitive-placeholder.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
@@ -334,6 +343,7 @@ const translation = ref<Misskey.entities.NotesTranslateResponse | null>(null);
 const translating = ref(false);
 const parsed = appearNote.text ? mfm.parse(appearNote.text) : null;
 const urls = parsed ? extractUrlFromMfm(parsed).filter((url) => appearNote.renote?.url !== url && appearNote.renote?.uri !== url) : null;
+const remoteSensitivePlaceholder = getRemoteSensitivePlaceholder(appearNote);
 const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceTicker === 'remote' && appearNote.user.instance);
 const conversation = ref<Misskey.entities.Note[]>([]);
 const replies = ref<Misskey.entities.Note[]>([]);
@@ -823,6 +833,19 @@ function loadConversation() {
 	border-radius: var(--MI-radius);
 	padding: 12px;
 	margin-top: 8px;
+}
+
+.remoteSensitivePlaceholder {
+	padding: 10px 12px;
+	border-radius: 8px;
+	border: 1px solid var(--MI_THEME-divider);
+	background: color-mix(in srgb, var(--MI_THEME-panel) 88%, var(--MI_THEME-warn) 12%);
+
+	> a {
+		display: inline-block;
+		margin-top: 6px;
+		word-break: break-all;
+	}
 }
 
 .poll {

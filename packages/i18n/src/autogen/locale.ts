@@ -6897,6 +6897,14 @@ export interface Locale extends ILocale {
          */
         "blockRemoteSensitiveNotesDescription": string;
         /**
+         * 拒否時に案内文とリンクを表示する
+         */
+        "blockRemoteSensitiveNotesShowPlaceholder": string;
+        /**
+         * 有効にすると、センシティブ受信拒否の対象投稿を本文は保存せず「このサーバーでこのコンテンツを閲覧することはできません。」という案内文と元投稿へのリンク付きで表示します。
+         */
+        "blockRemoteSensitiveNotesShowPlaceholderDescription": string;
+        /**
          * 一定期間モデレーターのアクティビティが検出されなかった場合、スパム防止のためこの設定は自動でオフになります。
          */
         "thisSettingWillAutomaticallyOffWhenModeratorsInactive": string;

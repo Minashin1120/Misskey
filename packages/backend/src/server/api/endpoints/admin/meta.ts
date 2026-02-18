@@ -34,6 +34,10 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			blockRemoteSensitiveNotesShowPlaceholder: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 			emailRequiredForSignup: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -693,6 +697,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				cacheRemoteFiles: instance.cacheRemoteFiles,
 				cacheRemoteSensitiveFiles: instance.cacheRemoteSensitiveFiles,
 				blockRemoteSensitiveNotes: instance.blockRemoteSensitiveNotes,
+				blockRemoteSensitiveNotesShowPlaceholder: instance.blockRemoteSensitiveNotesShowPlaceholder,
 				pinnedUsers: instance.pinnedUsers,
 				hiddenTags: instance.hiddenTags,
 				blockedHosts: instance.blockedHosts,

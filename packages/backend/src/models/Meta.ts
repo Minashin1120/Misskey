@@ -192,6 +192,11 @@ export class MiMeta {
 	@Column('boolean', {
 		default: false,
 	})
+	public blockRemoteSensitiveNotesShowPlaceholder: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
 	public emailRequiredForSignup: boolean;
 
 	@Column('boolean', {

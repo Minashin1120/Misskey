@@ -88,6 +88,7 @@ export const paramDef = {
 		cacheRemoteFiles: { type: 'boolean' },
 		cacheRemoteSensitiveFiles: { type: 'boolean' },
 		blockRemoteSensitiveNotes: { type: 'boolean' },
+		blockRemoteSensitiveNotesShowPlaceholder: { type: 'boolean' },
 		emailRequiredForSignup: { type: 'boolean' },
 		enableHcaptcha: { type: 'boolean' },
 		hcaptchaSiteKey: { type: 'string', nullable: true },
@@ -368,6 +369,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.blockRemoteSensitiveNotes !== undefined) {
 				set.blockRemoteSensitiveNotes = ps.blockRemoteSensitiveNotes;
+			}
+
+			if (ps.blockRemoteSensitiveNotesShowPlaceholder !== undefined) {
+				set.blockRemoteSensitiveNotesShowPlaceholder = ps.blockRemoteSensitiveNotesShowPlaceholder;
 			}
 
 			if (ps.emailRequiredForSignup !== undefined) {

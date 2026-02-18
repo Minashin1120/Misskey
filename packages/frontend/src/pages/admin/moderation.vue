@@ -30,6 +30,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #caption><SearchText>{{ i18n.ts._serverSettings.blockRemoteSensitiveNotesDescription }}</SearchText></template>
 					</MkSwitch>
 				</SearchMarker>
+				<SearchMarker :keywords="['sensitive', 'remote', 'block', 'placeholder', 'link']">
+					<MkSwitch v-model="blockRemoteSensitiveNotesShowPlaceholder" @change="onChange_blockRemoteSensitiveNotesShowPlaceholder">
+						<template #label><SearchLabel>{{ i18n.ts._serverSettings.blockRemoteSensitiveNotesShowPlaceholder }}</SearchLabel></template>
+						<template #caption><SearchText>{{ i18n.ts._serverSettings.blockRemoteSensitiveNotesShowPlaceholderDescription }}</SearchText></template>
+					</MkSwitch>
+				</SearchMarker>
 
 				<SearchMarker :keywords="['ugc', 'content', 'visibility', 'visitor', 'guest']">
 					<MkSelect v-model="ugcVisibilityForVisitor" :items="ugcVisibilityForVisitorDef" @update:modelValue="onChange_ugcVisibilityForVisitor">
@@ -232,12 +238,14 @@ const meta = await misskeyApi('admin/meta') as Misskey.Endpoints['admin/meta']['
 	aiModerationGeminiApiKey: string | null;
 	aiModerationLastCheckedNoteId: string | null;
 	blockRemoteSensitiveNotes: boolean;
+	blockRemoteSensitiveNotesShowPlaceholder: boolean;
 	aiModerationViolationAction: 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly';
 };
 
 const enableRegistration = ref(!meta.disableRegistration);
 const emailRequiredForSignup = ref(meta.emailRequiredForSignup);
 const blockRemoteSensitiveNotes = ref(meta.blockRemoteSensitiveNotes);
+const blockRemoteSensitiveNotesShowPlaceholder = ref(meta.blockRemoteSensitiveNotesShowPlaceholder);
 const {
 	model: ugcVisibilityForVisitor,
 	def: ugcVisibilityForVisitorDef,
@@ -302,6 +310,14 @@ function onChange_emailRequiredForSignup(value: boolean) {
 function onChange_blockRemoteSensitiveNotes(value: boolean) {
 	os.apiWithDialog('admin/update-meta', {
 		blockRemoteSensitiveNotes: value,
+	} as any).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_blockRemoteSensitiveNotesShowPlaceholder(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		blockRemoteSensitiveNotesShowPlaceholder: value,
 	} as any).then(() => {
 		fetchInstance(true);
 	});

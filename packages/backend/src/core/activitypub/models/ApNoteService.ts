@@ -225,17 +225,53 @@ export class ApNoteService {
 			}
 		}
 
-		// 添付ファイル
-		const files: MiDriveFile[] = [];
-		if (this.meta.blockRemoteSensitiveNotes && (note.sensitive === true || cw != null)) {
+		const hasSensitiveAttachment = toArray(note.attachment).some(attach => (attach.sensitive ?? note.sensitive) === true);
+
+		if (this.meta.blockRemoteSensitiveNotes && (note.sensitive === true || cw != null || hasSensitiveAttachment)) {
+			if (this.meta.blockRemoteSensitiveNotesShowPlaceholder) {
+				const sourceUrl = url ?? note.id;
+				const placeholderText = `このサーバーでこのコンテンツを閲覧することはできません。\n元の投稿: ${sourceUrl}`;
+
+				try {
+					return await this.noteCreateService.create(actor, {
+						createdAt: note.published ? new Date(note.published) : null,
+						files: [],
+						reply: null,
+						renote: null,
+						name: null,
+						cw: null,
+						text: placeholderText,
+						localOnly: false,
+						visibility,
+						visibleUsers,
+						apMentions: [],
+						apHashtags: [],
+						apEmojis: [],
+						poll: null,
+						uri: note.id,
+						url,
+					}, silent);
+				} catch (err: any) {
+					if (err.name !== 'duplicated') {
+						throw err;
+					}
+					this.logger.info('The placeholder note is already inserted while creating itself, reading again');
+					const duplicate = await this.fetchNote(value);
+					if (!duplicate) {
+						throw new Error('The placeholder note creation failed with duplication error even when there is no duplication');
+					}
+					return duplicate;
+				}
+			}
+
 			throw new IdentifiableError('d450b8a9-48e4-4dab-ae36-f4db763fda7c', 'Note is sensitive/CW and blockRemoteSensitiveNotes is enabled');
 		}
 
+		// 添付ファイル
+		const files: MiDriveFile[] = [];
+
 		for (const attach of toArray(note.attachment)) {
 			attach.sensitive ??= note.sensitive;
-			if (this.meta.blockRemoteSensitiveNotes && attach.sensitive) {
-				throw new IdentifiableError('d450b8a9-48e4-4dab-ae36-f4db763fda7c', 'Note contains sensitive attachment and blockRemoteSensitiveNotes is enabled');
-			}
 			const file = await this.apImageService.resolveImage(actor, attach);
 			if (file) files.push(file);
 		}

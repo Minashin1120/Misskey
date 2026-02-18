@@ -8,9 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_spacer" :style="{ '--MI_SPACER-w': narrow ? '800px' : '1100px' }">
 		<div ref="rootEl" class="ftskorzw" :class="{ wide: !narrow }" style="container-type: inline-size;">
 			<div class="main _gaps">
-				<!-- TODO -->
-				<!-- <div class="punished" v-if="user.isSuspended"><i class="ti ti-alert-triangle" style="margin-right: 8px;"></i> {{ i18n.ts.userSuspended }}</div> -->
-				<!-- <div class="punished" v-if="user.isSilenced"><i class="ti ti-alert-triangle" style="margin-right: 8px;"></i> {{ i18n.ts.userSilenced }}</div> -->
+				<div class="punished _panel" v-if="user.isSuspended"><i class="ti ti-alert-triangle" style="margin-right: 8px;"></i> このアカウントは規約違反のため凍結されています。</div>
+				<div class="punished _panel" v-if="user.isSilenced"><i class="ti ti-alert-triangle" style="margin-right: 8px;"></i> {{ i18n.ts.userSilenced }}</div>
 
 				<div class="profile _gaps">
 					<MkAccountMoved v-if="user.movedTo" :movedTo="user.movedTo"/>

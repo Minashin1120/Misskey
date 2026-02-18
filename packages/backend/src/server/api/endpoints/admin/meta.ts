@@ -683,6 +683,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				translatorAvailable: instance.deeplAuthKey != null,
 				cacheRemoteFiles: instance.cacheRemoteFiles,
 				cacheRemoteSensitiveFiles: instance.cacheRemoteSensitiveFiles,
+                                blockRemoteSensitiveNotes: instance.blockRemoteSensitiveNotes,
 				pinnedUsers: instance.pinnedUsers,
 				hiddenTags: instance.hiddenTags,
 				blockedHosts: instance.blockedHosts,

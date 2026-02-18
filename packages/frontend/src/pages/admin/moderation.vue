@@ -206,10 +206,12 @@ const meta = await misskeyApi('admin/meta') as Misskey.Endpoints['admin/meta']['
 	aiModerationEnabled: boolean;
 	aiModerationGeminiApiKey: string | null;
 	aiModerationLastCheckedNoteId: string | null;
+        blockRemoteSensitiveNotes: boolean;
 };
 
 const enableRegistration = ref(!meta.disableRegistration);
 const emailRequiredForSignup = ref(meta.emailRequiredForSignup);
+const blockRemoteSensitiveNotes = ref(meta.blockRemoteSensitiveNotes);
 const {
 	model: ugcVisibilityForVisitor,
 	def: ugcVisibilityForVisitorDef,

@@ -7,7 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { IsNull } from 'typeorm';
 import { DI } from '@/di-symbols.js';
-import type { RegistrationTicketsRepository, UsedUsernamesRepository, UserPendingsRepository, UserProfilesRepository, UsersRepository, MiRegistrationTicket, MiMeta } from '@/models/_.js';
+import type { UsedUsernamesRepository, UserPendingsRepository, UserProfilesRepository, UsersRepository, MiMeta } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import { CaptchaService } from '@/core/CaptchaService.js';
 import { IdService } from '@/core/IdService.js';
@@ -41,9 +41,6 @@ export class SignupApiService {
 
 		@Inject(DI.usedUsernamesRepository)
 		private usedUsernamesRepository: UsedUsernamesRepository,
-
-		@Inject(DI.registrationTicketsRepository)
-		private registrationTicketsRepository: RegistrationTicketsRepository,
 
 		private userEntityService: UserEntityService,
 		private idService: IdService,
@@ -111,7 +108,6 @@ export class SignupApiService {
 		const username = body['username'];
 		const password = body['password'];
 		const host: string | null = process.env.NODE_ENV === 'test' ? (body['host'] ?? null) : null;
-		const invitationCode = body['invitationCode'];
 		const emailAddress = body['emailAddress'];
 
 		if (this.meta.emailRequiredForSignup) {
@@ -127,46 +123,10 @@ export class SignupApiService {
 			}
 		}
 
-		let ticket: MiRegistrationTicket | null = null;
-
-		// テスト時はこの機構は障害となるため無効にする
+		// 一時的に新規登録を停止する
 		if (process.env.NODE_ENV !== 'test' && this.meta.disableRegistration) {
-			if (invitationCode == null || typeof invitationCode !== 'string') {
-				reply.code(400);
-				return;
-			}
-
-			ticket = await this.registrationTicketsRepository.findOneBy({
-				code: invitationCode,
-			});
-
-			if (ticket == null || ticket.usedById != null) {
-				reply.code(400);
-				return;
-			}
-
-			if (ticket.expiresAt && ticket.expiresAt < new Date()) {
-				reply.code(400);
-				return;
-			}
-
-			// メアド認証が有効の場合
-			if (this.meta.emailRequiredForSignup) {
-				// メアド認証済みならエラー
-				if (ticket.usedBy) {
-					reply.code(400);
-					return;
-				}
-
-				// 認証しておらず、メール送信から30分以内ならエラー
-				if (ticket.usedAt && ticket.usedAt.getTime() + (1000 * 60 * 30) > Date.now()) {
-					reply.code(400);
-					return;
-				}
-			} else if (ticket.usedAt) {
-				reply.code(400);
-				return;
-			}
+			reply.code(403);
+			return;
 		}
 
 		if (this.meta.emailRequiredForSignup) {
@@ -203,13 +163,6 @@ export class SignupApiService {
 			this.emailService.sendEmail(emailAddress!, 'Signup',
 				`To complete signup, please click this link:<br><a href="${link}">${link}</a>`,
 				`To complete signup, please click this link: ${link}`);
-
-			if (ticket) {
-				await this.registrationTicketsRepository.update(ticket.id, {
-					usedAt: new Date(),
-					pendingUserId: pendingUser.id,
-				});
-			}
 
 			reply.code(204);
 			return;

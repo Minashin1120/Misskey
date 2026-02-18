@@ -6889,6 +6889,14 @@ export interface Locale extends ILocale {
          */
         "openRegistrationWarning": string;
         /**
+         * センシティブなリモート投稿を拒否する
+         */
+        "blockRemoteSensitiveNotes": string;
+        /**
+         * 有効にすると、CW（注釈）やセンシティブ指定がされているリモートの投稿（画像を含む）を受信しないようにします。
+         */
+        "blockRemoteSensitiveNotesDescription": string;
+        /**
          * 一定期間モデレーターのアクティビティが検出されなかった場合、スパム防止のためこの設定は自動でオフになります。
          */
         "thisSettingWillAutomaticallyOffWhenModeratorsInactive": string;

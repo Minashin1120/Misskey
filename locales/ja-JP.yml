@@ -1757,6 +1757,8 @@ _serverSettings:
   inquiryUrlDescription: "サーバー運営者へのお問い合わせフォームのURLや、運営者の連絡先等が記載されたWebページのURLを指定します。"
   openRegistration: "アカウントの作成をオープンにする"
   openRegistrationWarning: "登録を開放することはリスクが伴います。サーバーを常に監視し、トラブルが発生した際にすぐに対応できる体制がある場合のみオンにすることを推奨します。"
+  blockRemoteSensitiveNotes: "センシティブなリモート投稿を拒否する"
+  blockRemoteSensitiveNotesDescription: "有効にすると、CW（注釈）やセンシティブ指定がされているリモートの投稿（画像を含む）を受信しないようにします。"
   thisSettingWillAutomaticallyOffWhenModeratorsInactive: "一定期間モデレーターのアクティビティが検出されなかった場合、スパム防止のためこの設定は自動でオフになります。"
   deliverSuspendedSoftware: "配信停止中のソフトウェア"
   deliverSuspendedSoftwareDescription: "脆弱性などの理由で、サーバーのソフトウェアの名前及びバージョンの範囲を指定して配信を停止できます。このバージョン情報はサーバーが提供したものであり、信頼性は保証されません。バージョン指定には semver の範囲指定が使用できますが、>= 2024.3.1 と指定すると 2024.3.1-custom.0 のようなカスタムバージョンが含まれないため、>= 2024.3.1-0 のように prerelease の指定を行うことを推奨します。"

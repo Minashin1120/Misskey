@@ -14,20 +14,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<!-- <img class="logo" v-if="instance.logoImageUrl" :src="instance.logoImageUrl"><span v-else class="text">{{ instanceName }}</span> -->
 				<MkA to="/">{{ instanceName }}</MkA>
 			</h1>
-			<div :class="$style.mainAbout">
-				<!-- eslint-disable-next-line vue/no-v-html -->
-				<div v-html="instance.description || i18n.ts.headlineMisskey"></div>
-			</div>
-			<div v-if="instance.disableRegistration || instance.federation !== 'all'" :class="$style.mainWarn" class="_gaps_s">
-				<MkInfo v-if="instance.disableRegistration" warn>{{ i18n.ts.invitationRequiredToRegister }}</MkInfo>
-				<MkInfo v-if="instance.federation === 'specified'" warn>{{ i18n.ts.federationSpecified }}</MkInfo>
-				<MkInfo v-else-if="instance.federation === 'none'" warn>{{ i18n.ts.federationDisabled }}</MkInfo>
-			</div>
-			<div class="_gaps_s" :class="$style.mainActions">
-				<MkButton :class="$style.mainAction" full rounded gradate data-cy-signup style="margin-right: 12px;" @click="signup()">{{ i18n.ts.joinThisServer }}</MkButton>
-				<MkButton :class="$style.mainAction" full rounded link to="https://misskey-hub.net/servers/">{{ i18n.ts.exploreOtherServers }}</MkButton>
-				<MkButton :class="$style.mainAction" full rounded data-cy-signin @click="signin()">{{ i18n.ts.login }}</MkButton>
-			</div>
+				<div :class="$style.mainAbout">
+					<div>現在、Misskeyサーバーは構築準備中です。</div>
+					<div>管理者の方はログインしてください。</div>
+				</div>
+				<div :class="$style.mainWarn" class="_gaps_s">
+					<MkInfo warn>現在、新規アカウント登録を停止しています。</MkInfo>
+					<MkInfo v-if="instance.federation === 'specified'" warn>{{ i18n.ts.federationSpecified }}</MkInfo>
+					<MkInfo v-else-if="instance.federation === 'none'" warn>{{ i18n.ts.federationDisabled }}</MkInfo>
+				</div>
+				<div class="_gaps_s" :class="$style.mainActions">
+					<MkButton :class="$style.mainAction" full rounded link to="https://misskey-hub.net/servers/">{{ i18n.ts.exploreOtherServers }}</MkButton>
+					<MkButton :class="$style.mainAction" full rounded data-cy-signin @click="signin()">{{ i18n.ts.login }}</MkButton>
+				</div>
 		</div>
 	</div>
 	<div v-if="stats && instance.clientOptions.showActivitiesForVisitor !== false" :class="$style.stats">
@@ -58,7 +57,6 @@ import * as Misskey from 'misskey-js';
 import { instanceName } from '@@/js/config.js';
 import type { MenuItem } from '@/types/menu.js';
 import XSigninDialog from '@/components/MkSigninDialog.vue';
-import XSignupDialog from '@/components/MkSignupDialog.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkStreamingNotesTimeline from '@/components/MkStreamingNotesTimeline.vue';
 import MkInfo from '@/components/MkInfo.vue';
@@ -80,14 +78,6 @@ if (instance.clientOptions.showActivitiesForVisitor !== false) {
 
 function signin() {
 	const { dispose } = os.popup(XSigninDialog, {
-		autoSet: true,
-	}, {
-		closed: () => dispose(),
-	});
-}
-
-function signup() {
-	const { dispose } = os.popup(XSignupDialog, {
 		autoSet: true,
 	}, {
 		closed: () => dispose(),

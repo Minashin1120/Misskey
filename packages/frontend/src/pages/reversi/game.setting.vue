@@ -164,6 +164,28 @@ type ReversiFormItem =
 	| { id: string; type: 'switch'; label: string; value: boolean }
 	| { id: string; type: 'radio'; label: string; value: number; items: Array<{ label: string; value: number }> };
 
+const defaultBotFormItems: ReversiFormItem[] = [
+	{
+		id: 'publish',
+		type: 'switch',
+		label: '藍が対局情報を投稿するのを許可',
+		value: true,
+	},
+	{
+		id: 'strength',
+		type: 'radio',
+		label: '強さ',
+		value: 4,
+		items: [
+			{ label: '接待', value: 0 },
+			{ label: '弱', value: 2 },
+			{ label: '中', value: 3 },
+			{ label: '強', value: 4 },
+			{ label: '最強', value: 5 },
+		],
+	},
+];
+
 const botFormKey = computed<'form1' | 'form2' | null>(() => {
 	if (game.value.user1?.isBot) return 'form1';
 	if (game.value.user2?.isBot) return 'form2';
@@ -172,7 +194,7 @@ const botFormKey = computed<'form1' | 'form2' | null>(() => {
 const botFormItems = computed<ReversiFormItem[]>(() => {
 	if (botFormKey.value == null) return [];
 	const form = game.value[botFormKey.value];
-	if (!Array.isArray(form)) return [];
+	if (!Array.isArray(form)) return deepClone(defaultBotFormItems);
 	return form.filter((item): item is ReversiFormItem => {
 		return typeof item?.id === 'string' && (item?.type === 'switch' || item?.type === 'radio');
 	});
@@ -262,9 +284,9 @@ function updateFormItem(id: string, value: unknown) {
 	const key = botFormKey.value;
 	if (key == null) return;
 	const form = game.value[key];
-	if (!Array.isArray(form)) return;
+	const base = Array.isArray(form) ? form : defaultBotFormItems;
 
-	const next = deepClone(form).map((item) => {
+	const next = deepClone(base).map((item) => {
 		if (item?.id !== id) return item;
 		return {
 			...item,

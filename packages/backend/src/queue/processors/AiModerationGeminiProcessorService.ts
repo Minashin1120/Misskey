@@ -4,6 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
+import { In } from 'typeorm';
 import type Logger from '@/logger.js';
 import { DI } from '@/di-symbols.js';
 import { bindThis } from '@/decorators.js';
@@ -14,12 +15,21 @@ import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { NoteDeleteService } from '@/core/NoteDeleteService.js';
-import type { MiNote, NotesRepository, UsersRepository } from '@/models/_.js';
+import type { MiDriveFile, MiNote, DriveFilesRepository, NotesRepository, UsersRepository } from '@/models/_.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
 const MODEL_NAME = 'gemini-2.5-flash-lite';
 const SCAN_LIMIT_PER_RUN = 20;
+const MAX_IMAGE_ATTACHMENTS_PER_NOTE = 4;
+const MAX_IMAGE_FETCH_SIZE_BYTES = 2 * 1024 * 1024;
+const GEMINI_IMAGE_MIME_TYPES = new Set([
+	'image/jpeg',
+	'image/png',
+	'image/webp',
+	'image/gif',
+]);
 type AiModerationViolationAction = 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly';
+type GeminiContentPart = { text: string } | { inlineData: { mimeType: string; data: string } };
 
 type GeminiModerationResult = {
 	violation: boolean;
@@ -37,6 +47,9 @@ export class AiModerationGeminiProcessorService {
 
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
+
+		@Inject(DI.driveFilesRepository)
+		private driveFilesRepository: DriveFilesRepository,
 
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
@@ -74,7 +87,7 @@ export class AiModerationGeminiProcessorService {
 
 		const query = this.notesRepository.createQueryBuilder('note')
 			.where('note."userHost" IS NULL')
-			.andWhere('(note."text" IS NOT NULL OR note."cw" IS NOT NULL OR note."name" IS NOT NULL)')
+			.andWhere('(note."text" IS NOT NULL OR note."cw" IS NOT NULL OR note."name" IS NOT NULL OR COALESCE(array_length(note."fileIds", 1), 0) > 0)')
 			.orderBy('note.id', 'ASC')
 			.limit(SCAN_LIMIT_PER_RUN);
 
@@ -92,13 +105,13 @@ export class AiModerationGeminiProcessorService {
 		const action = meta.aiModerationViolationAction ?? 'flagOnly';
 
 		for (const note of notes) {
-			const content = this.buildNoteContent(note);
-			if (content === '') {
+			const parts = await this.buildModerationParts(note);
+			if (parts.length === 0) {
 				await this.metaService.update({ aiModerationLastCheckedNoteId: note.id });
 				continue;
 			}
 
-			const result = await this.checkWithGemini(meta.aiModerationGeminiApiKey, rules, content);
+			const result = await this.checkWithGemini(meta.aiModerationGeminiApiKey, rules, parts);
 
 			if (result.violation) {
 				const actionLabel = await this.applyViolationAction(note, action);
@@ -188,21 +201,96 @@ export class AiModerationGeminiProcessorService {
 	}
 
 	@bindThis
-	private async checkWithGemini(apiKey: string, rules: string[], noteContent: string): Promise<GeminiModerationResult> {
+	private async buildModerationParts(note: MiNote): Promise<GeminiContentPart[]> {
+		const parts: GeminiContentPart[] = [];
+		const content = this.buildNoteContent(note);
+		if (content !== '') {
+			parts.push({ text: `Text content:\n${content}` });
+		}
+
+		if (note.fileIds.length === 0) {
+			return parts;
+		}
+
+		const files = await this.driveFilesRepository.findBy({
+			id: In(note.fileIds),
+		});
+		const filesById = new Map(files.map(file => [file.id, file]));
+
+		let imageCount = 0;
+		for (const fileId of note.fileIds) {
+			if (imageCount >= MAX_IMAGE_ATTACHMENTS_PER_NOTE) break;
+			const file = filesById.get(fileId);
+			if (!file) continue;
+			if (!this.isGeminiImageType(file.type)) continue;
+
+			const imagePart = await this.buildImagePart(file);
+			if (imagePart == null) continue;
+			parts.push(imagePart);
+			imageCount++;
+		}
+
+		return parts;
+	}
+
+	@bindThis
+	private async buildImagePart(file: MiDriveFile): Promise<GeminiContentPart | null> {
+		const url = file.webpublicUrl ?? file.thumbnailUrl ?? file.url;
+		if (!url) return null;
+
+		try {
+			const res = await this.httpRequestService.send(url, {
+				method: 'GET',
+				headers: {
+					Accept: 'image/*',
+				},
+				timeout: 10000,
+				size: MAX_IMAGE_FETCH_SIZE_BYTES,
+				isLocalAddressAllowed: true,
+			});
+			const responseType = (res.headers.get('content-type') ?? file.webpublicType ?? file.type).split(';')[0].trim().toLowerCase();
+			if (!this.isGeminiImageType(responseType)) {
+				return null;
+			}
+
+			const bytes = Buffer.from(await res.arrayBuffer());
+			if (bytes.length === 0) {
+				return null;
+			}
+
+			return {
+				inlineData: {
+					mimeType: responseType,
+					data: bytes.toString('base64'),
+				},
+			};
+		} catch (error) {
+			this.logger.debug(`Failed to fetch note image for moderation fileId=${file.id}: ${error instanceof Error ? error.message : String(error)}`);
+			return null;
+		}
+	}
+
+	@bindThis
+	private isGeminiImageType(contentType: string): boolean {
+		return GEMINI_IMAGE_MIME_TYPES.has(contentType.toLowerCase());
+	}
+
+	@bindThis
+	private async checkWithGemini(apiKey: string, rules: string[], noteParts: GeminiContentPart[]): Promise<GeminiModerationResult> {
 		const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${encodeURIComponent(apiKey)}`;
-		const prompt = [
+		const prompt = {
+			text: [
 			'You are a strict moderation classifier.',
-			'Evaluate whether the content violates any server rules.',
+			'Evaluate whether the note violates any server rules.',
+			'Judge using both text and attached images when available.',
 			'Output JSON only with this schema:',
 			'{"violation": boolean, "reason": string, "confidence": number}',
 			'confidence must be between 0 and 1.',
 			'',
 			'Server rules:',
 			...rules.map((rule, i) => `${i + 1}. ${rule}`),
-			'',
-			'Content:',
-			noteContent,
-		].join('\n');
+		].join('\n'),
+		};
 
 		const res = await this.httpRequestService.send(endpoint, {
 			method: 'POST',
@@ -212,7 +300,7 @@ export class AiModerationGeminiProcessorService {
 			body: JSON.stringify({
 				contents: [{
 					role: 'user',
-					parts: [{ text: prompt }],
+					parts: [prompt, ...noteParts],
 				}],
 				generationConfig: {
 					temperature: 0,

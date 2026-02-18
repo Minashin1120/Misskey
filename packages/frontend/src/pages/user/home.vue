@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_spacer" :style="{ '--MI_SPACER-w': narrow ? '800px' : '1100px' }">
 		<div ref="rootEl" class="ftskorzw" :class="{ wide: !narrow }" style="container-type: inline-size;">
 			<div class="main _gaps">
-				<div class="punished _panel isSuspended" v-if="user.isSuspended"><i class="ti ti-alert-triangle"></i><div>このアカウントは規約違反のため凍結されています。</div></div>
+				<div class="punished _panel isSuspended suspendedProfileNotice" v-if="user.isSuspended"><i class="ti ti-alert-triangle"></i><div>このアカウントは規約違反のため凍結されています。</div></div>
 				<div class="punished _panel" v-if="user.isSilenced && !shouldHideSuspendedProfileContent"><i class="ti ti-alert-triangle" style="margin-right: 8px;"></i> {{ i18n.ts.userSilenced }}</div>
 
 				<div v-if="!shouldHideSuspendedProfileContent" class="profile _gaps">
@@ -354,25 +354,40 @@ onDeactivated(disposeBannerParallaxResizeObserver);
 .ftskorzw {
 
 	> .main {
+		> .punished {
+			font-size: 1em;
+			padding: 16px;
+			text-align: center;
 
-                > .punished {
-                        font-size: 1em;
-                        padding: 16px;
-                        text-align: center;
+			&.suspendedProfileNotice {
+				max-width: 720px;
+				margin: 0 auto;
+			}
 
-                        &.isSuspended {
-                                font-size: 1.2em;
-                                font-weight: bold;
-                                padding: 64px 32px;
-                                color: var(--MI_THEME-error);
+			&.isSuspended {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				gap: 12px;
+				font-size: 1.1em;
+				font-weight: bold;
+				padding: 40px 24px;
+				color: var(--MI_THEME-error);
 
-                                > i {
-                                        display: block;
-                                        font-size: 4em;
-                                        margin: 0 0 16px 0 !important;
-                                }
-                        }
-                }
+				> i {
+					display: block;
+					font-size: 3rem;
+					line-height: 1;
+					margin: 0 !important;
+				}
+
+				> div {
+					max-width: 34ch;
+					line-height: 1.6;
+				}
+			}
+		}
 
 		> .profile {
 
@@ -685,6 +700,21 @@ onDeactivated(disposeBannerParallaxResizeObserver);
 @container (max-width: 500px) {
 	.ftskorzw {
 		> .main {
+			> .punished {
+				&.suspendedProfileNotice {
+					max-width: none;
+				}
+
+				&.isSuspended {
+					font-size: 1em;
+					padding: 28px 16px;
+
+					> i {
+						font-size: 2.4rem;
+					}
+				}
+			}
+
 			> .profile > .main {
 				> .banner-container {
 					--bannerHeight: 140px;

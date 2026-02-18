@@ -30,7 +30,7 @@ const isBeta = version.includes('-beta') || version.includes('-alpha') || versio
 
 function whatIsNew() {
 	modal.value?.close();
-	window.open(`https://misskey-hub.net/docs/releases/#_${version.replace(/\./g, '')}`, '_blank');
+	window.location.href = '/release-notes';
 }
 
 onMounted(() => {

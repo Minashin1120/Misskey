@@ -82,6 +82,11 @@ export function openInstanceMenu(ev: MouseEvent) {
 		text: i18n.ts.charts,
 		icon: 'ti ti-chart-line',
 		to: '/about#charts',
+	}, {
+		type: 'link',
+		text: i18n.ts.whatIsNew,
+		icon: 'ti ti-notebook',
+		to: '/release-notes',
 	}, { type: 'divider' }, {
 		type: 'link',
 		text: i18n.ts.ads,

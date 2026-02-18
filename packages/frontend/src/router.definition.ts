@@ -222,6 +222,9 @@ export const ROUTE_DEF = [{
 	path: '/about-misskey',
 	component: page(() => import('@/pages/about-misskey.vue')),
 }, {
+	path: '/release-notes',
+	component: page(() => import('@/pages/release-notes.vue')),
+}, {
 	path: '/invite',
 	name: 'invite',
 	component: page(() => import('@/pages/invite.vue')),

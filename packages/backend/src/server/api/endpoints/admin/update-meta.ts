@@ -16,6 +16,22 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:meta',
+
+	res: {
+		type: 'object',
+		optional: false, nullable: false,
+		properties: {
+			aiModerationManualScanJobId: {
+				type: 'string',
+				optional: true, nullable: true,
+			},
+			aiModerationManualScanCancelStatus: {
+				type: 'string',
+				enum: ['none', 'removed', 'cancelRequested', 'notFound', 'alreadyFinished'],
+				optional: false, nullable: false,
+			},
+		},
+	},
 } as const;
 
 export const paramDef = {
@@ -213,6 +229,7 @@ export const paramDef = {
 		aiModerationGeminiApiKey: { type: 'string', nullable: true },
 		aiModerationViolationAction: { type: 'string', enum: ['delete', 'hideFromOthers', 'homeOnly', 'flagOnly'] },
 		runAiModerationGeminiScanNow: { type: 'boolean' },
+		cancelAiModerationGeminiScanJobId: { type: 'string' },
 		remoteNotesCleaningExpiryDaysForEachNotes: { type: 'number' },
 		remoteNotesCleaningMaxProcessingDurationInMinutes: { type: 'number' },
 		showRoleBadgesOfRemoteUsers: { type: 'boolean' },
@@ -229,6 +246,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const set = {} as Partial<MiMeta>;
+			let aiModerationManualScanJobId: string | null = null;
+			let aiModerationManualScanCancelStatus: 'none' | 'removed' | 'cancelRequested' | 'notFound' | 'alreadyFinished' = 'none';
 
 			if (typeof ps.disableRegistration === 'boolean') {
 				set.disableRegistration = ps.disableRegistration;
@@ -786,8 +805,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.runAiModerationGeminiScanNow === true) {
-				await this.queueService.createAiModerationGeminiJob(true);
+				const job = await this.queueService.createAiModerationGeminiJob(true);
+				aiModerationManualScanJobId = String(job.id);
 			}
+
+			if (typeof ps.cancelAiModerationGeminiScanJobId === 'string' && ps.cancelAiModerationGeminiScanJobId.trim() !== '') {
+				aiModerationManualScanCancelStatus = await this.queueService.cancelAiModerationGeminiJob(ps.cancelAiModerationGeminiScanJobId.trim());
+			}
+
+			return {
+				aiModerationManualScanJobId,
+				aiModerationManualScanCancelStatus,
+			};
 		});
 	}
 }

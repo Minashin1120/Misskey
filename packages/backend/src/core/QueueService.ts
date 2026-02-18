@@ -92,6 +92,8 @@ const REPEATABLE_SYSTEM_JOB_DEF = [{
 
 @Injectable()
 export class QueueService {
+	private readonly aiModerationGeminiCancelRequestedJobIds = new Set<string>();
+
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
@@ -775,6 +777,39 @@ export class QueueService {
 				count: 100,
 			},
 		});
+	}
+
+	@bindThis
+	public async cancelAiModerationGeminiJob(jobId: string): Promise<'removed' | 'cancelRequested' | 'notFound' | 'alreadyFinished'> {
+		const job = await this.systemQueue.getJob(jobId);
+		if (job == null) {
+			return 'notFound';
+		}
+
+		const state = await job.getState();
+		if (state === 'waiting' || state === 'delayed' || state === 'paused' || state === 'prioritized') {
+			await job.remove();
+			this.aiModerationGeminiCancelRequestedJobIds.delete(jobId);
+			return 'removed';
+		}
+
+		if (state === 'active') {
+			this.aiModerationGeminiCancelRequestedJobIds.add(jobId);
+			return 'cancelRequested';
+		}
+
+		this.aiModerationGeminiCancelRequestedJobIds.delete(jobId);
+		return 'alreadyFinished';
+	}
+
+	@bindThis
+	public isAiModerationGeminiCancelRequested(jobId: string): boolean {
+		return this.aiModerationGeminiCancelRequestedJobIds.has(jobId);
+	}
+
+	@bindThis
+	public clearAiModerationGeminiCancelRequested(jobId: string): void {
+		this.aiModerationGeminiCancelRequestedJobIds.delete(jobId);
 	}
 
 	@bindThis

@@ -5,6 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { In } from 'typeorm';
+import type * as Bull from 'bullmq';
 import type Logger from '@/logger.js';
 import { DI } from '@/di-symbols.js';
 import { bindThis } from '@/decorators.js';
@@ -15,6 +16,7 @@ import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { NoteDeleteService } from '@/core/NoteDeleteService.js';
+import { QueueService } from '@/core/QueueService.js';
 import type { MiDriveFile, MiNote, DriveFilesRepository, NotesRepository, UsersRepository } from '@/models/_.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
@@ -60,92 +62,170 @@ export class AiModerationGeminiProcessorService {
 		private systemAccountService: SystemAccountService,
 		private notificationService: NotificationService,
 		private noteDeleteService: NoteDeleteService,
+		private queueService: QueueService,
 		private queueLoggerService: QueueLoggerService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('ai-moderation-gemini');
 	}
 
 	@bindThis
-	public async process(forceRun = false): Promise<void> {
-		const meta = await this.metaService.fetch(true);
+	public async process(forceRun = false, job?: Bull.Job): Promise<{ status: 'completed' | 'canceled'; total: number; processed: number; violations: number }> {
+		const jobId = job?.id != null ? String(job.id) : null;
+		const updateProgress = async (progress: Record<string, unknown>) => {
+			if (job != null) {
+				await job.updateProgress(progress);
+			}
+		};
+		const addLog = async (message: string) => {
+			if (job != null) {
+				await job.log(message);
+			}
+		};
+		const checkCanceled = (): boolean => {
+			if (jobId == null) return false;
+			return this.queueService.isAiModerationGeminiCancelRequested(jobId);
+		};
+		const clearCancelFlag = (): void => {
+			if (jobId != null) {
+				this.queueService.clearAiModerationGeminiCancelRequested(jobId);
+			}
+		};
 
-		if (!forceRun && !meta.aiModerationEnabled) {
-			this.logger.debug('AI moderation is disabled. skip.');
-			return;
-		}
+		try {
+			const meta = await this.metaService.fetch(true);
 
-		if (meta.aiModerationGeminiApiKey == null || meta.aiModerationGeminiApiKey.trim() === '') {
-			this.logger.warn('AI moderation is enabled, but Gemini API key is not set. skip.');
-			return;
-		}
+			if (!forceRun && !meta.aiModerationEnabled) {
+				this.logger.debug('AI moderation is disabled. skip.');
+				await updateProgress({ status: 'skipped', reason: 'disabled' });
+				return { status: 'completed', total: 0, processed: 0, violations: 0 };
+			}
 
-		const rules = meta.serverRules.map(rule => rule.trim()).filter(Boolean);
-		if (rules.length === 0) {
-			this.logger.warn('AI moderation is enabled, but server rules are empty. skip.');
-			return;
-		}
+			if (meta.aiModerationGeminiApiKey == null || meta.aiModerationGeminiApiKey.trim() === '') {
+				this.logger.warn('AI moderation is enabled, but Gemini API key is not set. skip.');
+				await updateProgress({ status: 'skipped', reason: 'missingApiKey' });
+				return { status: 'completed', total: 0, processed: 0, violations: 0 };
+			}
 
-		const query = this.notesRepository.createQueryBuilder('note')
-			.where('note."userHost" IS NULL')
-			.andWhere('(note."text" IS NOT NULL OR note."cw" IS NOT NULL OR note."name" IS NOT NULL OR COALESCE(array_length(note."fileIds", 1), 0) > 0)')
-			.orderBy('note.id', 'ASC')
-			.limit(SCAN_LIMIT_PER_RUN);
+			const rules = meta.serverRules.map(rule => rule.trim()).filter(Boolean);
+			if (rules.length === 0) {
+				this.logger.warn('AI moderation is enabled, but server rules are empty. skip.');
+				await updateProgress({ status: 'skipped', reason: 'emptyRules' });
+				return { status: 'completed', total: 0, processed: 0, violations: 0 };
+			}
 
-		if (meta.aiModerationLastCheckedNoteId != null) {
-			query.andWhere('note.id > :lastCheckedId', { lastCheckedId: meta.aiModerationLastCheckedNoteId });
-		}
+			const query = this.notesRepository.createQueryBuilder('note')
+				.where('note."userHost" IS NULL')
+				.andWhere('(note."text" IS NOT NULL OR note."cw" IS NOT NULL OR note."name" IS NOT NULL OR COALESCE(array_length(note."fileIds", 1), 0) > 0)')
+				.orderBy('note.id', 'ASC')
+				.limit(SCAN_LIMIT_PER_RUN);
 
-		const notes = await query.getMany();
-		if (notes.length === 0) {
-			this.logger.debug('No unscanned notes found.');
-			return;
-		}
+			if (meta.aiModerationLastCheckedNoteId != null) {
+				query.andWhere('note.id > :lastCheckedId', { lastCheckedId: meta.aiModerationLastCheckedNoteId });
+			}
 
-		const systemActor = await this.systemAccountService.fetch('actor');
-		const action = meta.aiModerationViolationAction ?? 'flagOnly';
+			const notes = await query.getMany();
+			if (notes.length === 0) {
+				this.logger.debug('No unscanned notes found.');
+				await updateProgress({ status: 'completed', total: 0, processed: 0, violations: 0 });
+				return { status: 'completed', total: 0, processed: 0, violations: 0 };
+			}
 
-		for (const note of notes) {
-			const parts = await this.buildModerationParts(note);
-			if (parts.length === 0) {
+			const systemActor = await this.systemAccountService.fetch('actor');
+			const action = meta.aiModerationViolationAction ?? 'flagOnly';
+			let processed = 0;
+			let violations = 0;
+
+			await updateProgress({
+				status: 'running',
+				total: notes.length,
+				processed,
+				violations,
+			});
+			await addLog(`AI moderation manual scan started. total=${notes.length}`);
+
+			for (const note of notes) {
+				if (checkCanceled()) {
+					await updateProgress({
+						status: 'canceled',
+						total: notes.length,
+						processed,
+						violations,
+					});
+					await addLog(`AI moderation manual scan canceled. processed=${processed}/${notes.length} violations=${violations}`);
+					return { status: 'canceled', total: notes.length, processed, violations };
+				}
+
+				const parts = await this.buildModerationParts(note);
+				if (parts.length === 0) {
+					await this.metaService.update({ aiModerationLastCheckedNoteId: note.id });
+					processed++;
+					await updateProgress({
+						status: 'running',
+						total: notes.length,
+						processed,
+						violations,
+						lastNoteId: note.id,
+					});
+					continue;
+				}
+
+				const result = await this.checkWithGemini(meta.aiModerationGeminiApiKey, rules, parts);
+
+				if (result.violation) {
+					violations++;
+					const actionLabel = await this.applyViolationAction(note, action);
+					const noteUrl = new URL(`/notes/${note.id}`, this.config.url).toString();
+					const confidence = typeof result.confidence === 'number'
+						? `\n- confidence: ${Math.max(0, Math.min(1, result.confidence)).toFixed(3)}`
+						: '';
+					const comment = [
+						`[AI Moderation / ${MODEL_NAME}] Server rule violation candidate detected.`,
+						`- noteId: ${note.id}`,
+						`- noteUrl: ${noteUrl}`,
+						`- action: ${actionLabel}`,
+						`- reason: ${result.reason || 'No reason provided.'}${confidence}`,
+					].join('\n');
+
+					await this.abuseReportService.report([{
+						targetUserId: note.userId,
+						targetUserHost: note.userHost,
+						reporterId: systemActor.id,
+						reporterHost: systemActor.host,
+						comment,
+					}]);
+
+					this.notificationService.createNotification(note.userId, 'app', {
+						appAccessTokenId: null,
+						customHeader: '違反の可能性があるノートを確認中です',
+						customBody: `あなたのノートにサーバールール違反の可能性が検出されました。自動対応: ${actionLabel}。モデレーターが確認中です。`,
+						customIcon: new URL('/static-assets/tabler-badges/bell.png', this.config.url).toString(),
+					});
+
+					this.logger.warn(`Violation candidate detected noteId=${note.id} action=${action}`);
+					await addLog(`Violation candidate detected. noteId=${note.id} action=${action}`);
+				}
+
 				await this.metaService.update({ aiModerationLastCheckedNoteId: note.id });
-				continue;
-			}
-
-			const result = await this.checkWithGemini(meta.aiModerationGeminiApiKey, rules, parts);
-
-			if (result.violation) {
-				const actionLabel = await this.applyViolationAction(note, action);
-				const noteUrl = new URL(`/notes/${note.id}`, this.config.url).toString();
-				const confidence = typeof result.confidence === 'number'
-					? `\n- confidence: ${Math.max(0, Math.min(1, result.confidence)).toFixed(3)}`
-					: '';
-				const comment = [
-					`[AI Moderation / ${MODEL_NAME}] Server rule violation candidate detected.`,
-					`- noteId: ${note.id}`,
-					`- noteUrl: ${noteUrl}`,
-					`- action: ${actionLabel}`,
-					`- reason: ${result.reason || 'No reason provided.'}${confidence}`,
-				].join('\n');
-
-				await this.abuseReportService.report([{
-					targetUserId: note.userId,
-					targetUserHost: note.userHost,
-					reporterId: systemActor.id,
-					reporterHost: systemActor.host,
-					comment,
-				}]);
-
-				this.notificationService.createNotification(note.userId, 'app', {
-					appAccessTokenId: null,
-					customHeader: '違反の可能性があるノートを確認中です',
-					customBody: `あなたのノートにサーバールール違反の可能性が検出されました。自動対応: ${actionLabel}。モデレーターが確認中です。`,
-					customIcon: new URL('/static-assets/tabler-badges/bell.png', this.config.url).toString(),
+				processed++;
+				await updateProgress({
+					status: 'running',
+					total: notes.length,
+					processed,
+					violations,
+					lastNoteId: note.id,
 				});
-
-				this.logger.warn(`Violation candidate detected noteId=${note.id} action=${action}`);
 			}
 
-			await this.metaService.update({ aiModerationLastCheckedNoteId: note.id });
+			await updateProgress({
+				status: 'completed',
+				total: notes.length,
+				processed,
+				violations,
+			});
+			await addLog(`AI moderation manual scan completed. processed=${processed}/${notes.length} violations=${violations}`);
+			return { status: 'completed', total: notes.length, processed, violations };
+		} finally {
+			clearCancelFlag();
 		}
 	}
 

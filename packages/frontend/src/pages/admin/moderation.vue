@@ -68,9 +68,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkButton :disabled="aiModerationManualScanRunning" @click="run_aiModerationGeminiScanNow">
 						{{ aiModerationManualScanRunning ? 'スキャンを実行中...' : '今すぐスキャンを実行' }}
 						</MkButton>
+						<MkButton v-if="aiModerationManualScanRunning && aiModerationManualScanJobId" danger @click="cancel_aiModerationGeminiScanNow">
+						スキャンをキャンセル
+						</MkButton>
 
 						<div v-if="aiModerationLastCheckedNoteId" class="_fullinfo">
 						 最終チェック済みノートID: <code>{{ aiModerationLastCheckedNoteId }}</code>
+						</div>
+						<div v-if="aiModerationManualScanStatus" class="_fullinfo">
+						 手動スキャン状態: {{ aiModerationManualScanStatus }}
+						</div>
+						<div v-if="aiModerationManualScanJobId" class="_fullinfo">
+						 手動スキャンJob ID: <code>{{ aiModerationManualScanJobId }}</code>
+						</div>
+						<div v-if="aiModerationManualScanLogs.length > 0" class="_fullinfo">
+						 <div>手動スキャンログ:</div>
+						 <pre>{{ aiModerationManualScanLogs.join('\n') }}</pre>
 						</div>
 
 						<div class="_fullinfo">
@@ -198,7 +211,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onBeforeUnmount } from 'vue';
 import * as Misskey from 'misskey-js';
 import XServerRules from './server-rules.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
@@ -255,6 +268,10 @@ const aiModerationViolationActionDef = [
 	{ label: 'フラグ付与のみ', value: 'flagOnly' },
 ] as const;
 const aiModerationManualScanRunning = ref(false);
+const aiModerationManualScanJobId = ref<string | null>(null);
+const aiModerationManualScanStatus = ref('');
+const aiModerationManualScanLogs = ref<string[]>([]);
+let aiModerationManualScanPollTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function onChange_enableRegistration(value: boolean) {
 	if (value) {
@@ -394,18 +411,136 @@ function save_aiModerationGeminiApiKey() {
 	});
 }
 
-function run_aiModerationGeminiScanNow() {
-	aiModerationManualScanRunning.value = true;
-	os.apiWithDialog('admin/update-meta', {
-		runAiModerationGeminiScanNow: true,
-	} as Misskey.Endpoints['admin/update-meta']['req'] & {
-		runAiModerationGeminiScanNow: boolean;
-	}).then(() => {
-		os.success();
-	}).finally(() => {
-		aiModerationManualScanRunning.value = false;
-	});
+function clearAiModerationManualScanPoll() {
+	if (aiModerationManualScanPollTimer != null) {
+		clearTimeout(aiModerationManualScanPollTimer);
+		aiModerationManualScanPollTimer = null;
+	}
 }
+
+function formatAiModerationScanStatus(progress: Record<string, unknown> | null, fallback: string): string {
+	if (!progress) return fallback;
+	const total = typeof progress.total === 'number' ? progress.total : null;
+	const processed = typeof progress.processed === 'number' ? progress.processed : null;
+	const violations = typeof progress.violations === 'number' ? progress.violations : null;
+	const status = typeof progress.status === 'string' ? progress.status : null;
+	const reason = typeof progress.reason === 'string' ? progress.reason : null;
+	const lastNoteId = typeof progress.lastNoteId === 'string' ? progress.lastNoteId : null;
+
+	const parts = [];
+	if (status) parts.push(`status=${status}`);
+	if (processed != null && total != null) parts.push(`processed=${processed}/${total}`);
+	if (violations != null) parts.push(`violations=${violations}`);
+	if (lastNoteId) parts.push(`lastNoteId=${lastNoteId}`);
+	if (reason) parts.push(`reason=${reason}`);
+	return parts.length > 0 ? parts.join(' | ') : fallback;
+}
+
+async function pollAiModerationManualScanJob(jobId: string) {
+	try {
+		const [job, logs] = await Promise.all([
+			misskeyApi('admin/queue/show-job', { queue: 'system', jobId } as any),
+			misskeyApi('admin/queue/show-job-logs', { queue: 'system', jobId } as any),
+		]) as [any, string[]];
+
+		aiModerationManualScanLogs.value = Array.isArray(logs) ? logs.slice(-10) : [];
+		const progress = job && typeof job.progress === 'object' && job.progress !== null
+			? job.progress as Record<string, unknown>
+			: null;
+		aiModerationManualScanStatus.value = formatAiModerationScanStatus(progress, '実行中');
+
+		if (typeof job?.finishedOn === 'number') {
+			aiModerationManualScanRunning.value = false;
+			clearAiModerationManualScanPoll();
+
+			const returnValue = job && typeof job.returnValue === 'object' && job.returnValue !== null
+				? job.returnValue as Record<string, unknown>
+				: null;
+			const completedStatus = formatAiModerationScanStatus(
+				returnValue,
+				typeof job?.isFailed === 'boolean' && job.isFailed ? '失敗' : '完了',
+			);
+			aiModerationManualScanStatus.value = completedStatus;
+		}
+	} catch (error) {
+		aiModerationManualScanStatus.value = `状態取得エラー: ${error instanceof Error ? error.message : String(error)}`;
+	}
+
+	if (aiModerationManualScanRunning.value && aiModerationManualScanJobId.value === jobId) {
+		aiModerationManualScanPollTimer = setTimeout(() => {
+			void pollAiModerationManualScanJob(jobId);
+		}, 1500);
+	}
+}
+
+async function run_aiModerationGeminiScanNow() {
+	clearAiModerationManualScanPoll();
+	aiModerationManualScanRunning.value = true;
+	aiModerationManualScanJobId.value = null;
+	aiModerationManualScanLogs.value = [];
+	aiModerationManualScanStatus.value = 'ジョブを投入しています...';
+
+	try {
+		const res = await os.apiWithDialog('admin/update-meta', {
+			runAiModerationGeminiScanNow: true,
+		} as any) as {
+			aiModerationManualScanJobId?: string | null;
+		};
+
+		const jobId = res?.aiModerationManualScanJobId ?? null;
+		if (!jobId) {
+			aiModerationManualScanStatus.value = 'ジョブIDを取得できませんでした。';
+			aiModerationManualScanRunning.value = false;
+			return;
+		}
+
+		aiModerationManualScanJobId.value = jobId;
+		aiModerationManualScanStatus.value = `ジョブ開始: ${jobId}`;
+		void pollAiModerationManualScanJob(jobId);
+	} catch {
+		aiModerationManualScanStatus.value = '手動スキャンの開始に失敗しました。';
+		aiModerationManualScanRunning.value = false;
+	}
+}
+
+async function cancel_aiModerationGeminiScanNow() {
+	if (!aiModerationManualScanJobId.value) return;
+
+	const jobId = aiModerationManualScanJobId.value;
+	const res = await os.apiWithDialog('admin/update-meta', {
+		cancelAiModerationGeminiScanJobId: jobId,
+	} as any) as {
+		aiModerationManualScanCancelStatus?: 'none' | 'removed' | 'cancelRequested' | 'notFound' | 'alreadyFinished';
+	};
+
+	switch (res?.aiModerationManualScanCancelStatus) {
+		case 'removed':
+			aiModerationManualScanRunning.value = false;
+			clearAiModerationManualScanPoll();
+			aiModerationManualScanStatus.value = '待機中ジョブをキャンセルしました。';
+			break;
+		case 'cancelRequested':
+			aiModerationManualScanStatus.value = 'キャンセル要求を送信しました。停止まで数秒かかる場合があります。';
+			break;
+		case 'alreadyFinished':
+			aiModerationManualScanRunning.value = false;
+			clearAiModerationManualScanPoll();
+			aiModerationManualScanStatus.value = 'ジョブは既に終了しています。';
+			break;
+		case 'notFound':
+			aiModerationManualScanRunning.value = false;
+			clearAiModerationManualScanPoll();
+			aiModerationManualScanStatus.value = '対象ジョブが見つかりませんでした。';
+			break;
+		default:
+			aiModerationManualScanStatus.value = 'キャンセル状態を確認できませんでした。';
+			break;
+	}
+}
+
+onBeforeUnmount(() => {
+	clearAiModerationManualScanPoll();
+});
 
 const headerTabs = computed(() => []);
 

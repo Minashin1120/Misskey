@@ -27,6 +27,32 @@ import type { OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
 
 const INVITATION_TIMEOUT_MS = 1000 * 20; // 20sec
 
+type ReversiBotFormItem =
+	| { id: string; type: 'switch'; label: string; value: boolean }
+	| { id: string; type: 'radio'; label: string; value: number; items: Array<{ label: string; value: number }> };
+
+const defaultReversiBotForm: ReversiBotFormItem[] = [
+	{
+		id: 'publish',
+		type: 'switch',
+		label: '藍が対局情報を投稿するのを許可',
+		value: true,
+	},
+	{
+		id: 'strength',
+		type: 'radio',
+		label: '強さ',
+		value: 4,
+		items: [
+			{ label: '接待', value: 0 },
+			{ label: '弱', value: 2 },
+			{ label: '中', value: 3 },
+			{ label: '強', value: 4 },
+			{ label: '最強', value: 5 },
+		],
+	},
+];
+
 @Injectable()
 export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 	private notificationService: NotificationService;
@@ -87,7 +113,15 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 			bw: game.bw,
 			crc32: game.crc32,
 			noIrregularRules: game.noIrregularRules,
+			form1: game.form1,
+			form2: game.form2,
 		} satisfies Partial<MiReversiGame>;
+	}
+
+	@bindThis
+	private getDefaultBotForm(user: MiUser): ReversiBotFormItem[] | null {
+		if (!user.isBot) return null;
+		return JSON.parse(JSON.stringify(defaultReversiBotForm));
 	}
 
 	@bindThis
@@ -121,7 +155,7 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 		if (invitations.includes(targetUser.id)) {
 			await this.redisClient.zrem(`reversi:matchSpecific:${me.id}`, targetUser.id);
 
-			const game = await this.matched(targetUser.id, me.id, {
+			const game = await this.matched(targetUser, me, {
 				noIrregularRules: false,
 			});
 
@@ -169,7 +203,10 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 			const invitorId = invitations[Math.floor(Math.random() * invitations.length)];
 			await this.redisClient.zrem(`reversi:matchSpecific:${me.id}`, invitorId);
 
-			const game = await this.matched(invitorId, me.id, {
+			const invitor = await this.cacheService.findUserById(invitorId).catch(() => null);
+			if (invitor == null) return null;
+
+			const game = await this.matched(invitor, me, {
 				noIrregularRules: false,
 			});
 
@@ -187,6 +224,8 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 
 		if (items.length > 0) {
 			const [matchedUserId, option] = items[0].split(':');
+			const matchedUser = await this.cacheService.findUserById(matchedUserId).catch(() => null);
+			if (matchedUser == null) return null;
 
 			await this.redisClient.zrem('reversi:matchAny',
 				me.id,
@@ -194,7 +233,7 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 				me.id + ':noIrregularRules',
 				matchedUserId + ':noIrregularRules');
 
-			const game = await this.matched(matchedUserId, me.id, {
+			const game = await this.matched(matchedUser, me, {
 				noIrregularRules: options.noIrregularRules || option === 'noIrregularRules',
 			});
 
@@ -281,11 +320,11 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 	}
 
 	@bindThis
-	private async matched(parentId: MiUser['id'], childId: MiUser['id'], options: { noIrregularRules: boolean; }): Promise<MiReversiGame> {
+	private async matched(parent: MiUser, child: MiUser, options: { noIrregularRules: boolean; }): Promise<MiReversiGame> {
 		const game = await this.reversiGamesRepository.insertOne({
 			id: this.idService.gen(),
-			user1Id: parentId,
-			user2Id: childId,
+			user1Id: parent.id,
+			user2Id: child.id,
 			user1Ready: false,
 			user2Ready: false,
 			isStarted: false,
@@ -295,11 +334,13 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 			bw: 'random',
 			isLlotheo: false,
 			noIrregularRules: options.noIrregularRules,
+			form1: this.getDefaultBotForm(parent),
+			form2: this.getDefaultBotForm(child),
 		}, { relations: ['user1', 'user2'] });
 		this.cacheGame(game);
 
 		const packed = await this.reversiGameEntityService.packDetail(game);
-		this.globalEventService.publishReversiStream(parentId, 'matched', { game: packed });
+		this.globalEventService.publishReversiStream(parent.id, 'matched', { game: packed });
 
 		return game;
 	}
@@ -420,6 +461,9 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 				return typeof value === 'boolean';
 			case 'timeLimitForEachTurn':
 				return typeof value === 'number' && value >= 0;
+			case 'form1':
+			case 'form2':
+				return value === null || Array.isArray(value);
 			default:
 				return false;
 		}
@@ -433,6 +477,8 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 		if ((game.user1Id !== user.id) && (game.user2Id !== user.id)) return;
 		if ((game.user1Id === user.id) && game.user1Ready) return;
 		if ((game.user2Id === user.id) && game.user2Ready) return;
+		if (key === 'form1' && game.user1Id !== user.id) return;
+		if (key === 'form2' && game.user2Id !== user.id) return;
 
 		const updatedGame = {
 			...game,

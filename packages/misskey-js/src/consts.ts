@@ -253,6 +253,8 @@ export const reversiUpdateKeys = [
 	'canPutEverywhere',
 	'loopedBoard',
 	'timeLimitForEachTurn',
+	'form1',
+	'form2',
 ] as const satisfies (keyof ReversiGameDetailed)[];
 
 export type ReversiUpdateKey = typeof reversiUpdateKeys[number];

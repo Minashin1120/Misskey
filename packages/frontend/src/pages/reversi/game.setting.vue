@@ -79,6 +79,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkSwitch v-model="game.canPutEverywhere" @update:modelValue="updateSettings('canPutEverywhere')">{{ i18n.ts._reversi.canPutEverywhere }}</MkSwitch>
 						</div>
 					</MkFolder>
+
+					<MkFolder v-if="myFormItems.length > 0" :defaultOpen="true">
+						<template #label>Bot設定</template>
+
+						<div class="_gaps_s">
+							<template v-for="item in myFormItems" :key="item.id">
+								<MkSwitch v-if="item.type === 'switch'" :modelValue="item.value" @update:modelValue="value => updateFormItem(item.id, value)">{{ item.label }}</MkSwitch>
+								<div v-else-if="item.type === 'radio'" class="_gaps_xs">
+									<div>{{ item.label }}</div>
+									<MkRadios :modelValue="item.value" @update:modelValue="value => updateFormItem(item.id, value)">
+										<option v-for="choice in item.items" :key="`${item.id}-${choice.value}`" :value="choice.value">{{ choice.label }}</option>
+									</MkRadios>
+								</div>
+							</template>
+						</div>
+					</MkFolder>
 				</template>
 			</div>
 		</div>
@@ -144,6 +160,19 @@ const mapName = computed(() => {
 	const found = Object.values(Reversi.maps).find(x => x.data.join('') === game.value.map.join(''));
 	return found ? found.name! : '-Custom-';
 });
+type ReversiFormItem =
+	| { id: string; type: 'switch'; label: string; value: boolean }
+	| { id: string; type: 'radio'; label: string; value: number; items: Array<{ label: string; value: number }> };
+
+const myFormKey = computed<'form1' | 'form2'>(() => game.value.user1Id === $i.id ? 'form1' : 'form2');
+const myFormItems = computed<ReversiFormItem[]>(() => {
+	const form = game.value[myFormKey.value];
+	if (!Array.isArray(form)) return [];
+	return form.filter((item): item is ReversiFormItem => {
+		return typeof item?.id === 'string' && (item?.type === 'switch' || item?.type === 'radio');
+	});
+});
+
 const isReady = computed(() => {
 	if (game.value.user1Id === $i.id && game.value.user1Ready) return true;
 	if (game.value.user2Id === $i.id && game.value.user2Ready) return true;
@@ -222,6 +251,23 @@ function updateSettings(key: typeof Misskey.reversiUpdateKeys[number]) {
 		key: key,
 		value: game.value[key],
 	});
+}
+
+function updateFormItem(id: string, value: unknown) {
+	const key = myFormKey.value;
+	const form = game.value[key];
+	if (!Array.isArray(form)) return;
+
+	const next = deepClone(form).map((item) => {
+		if (item?.id !== id) return item;
+		return {
+			...item,
+			value,
+		};
+	});
+
+	game.value[key] = next as any;
+	updateSettings(key);
 }
 
 function onUpdateSettings<K extends typeof Misskey.reversiUpdateKeys[number]>({ userId, key, value }: { userId: string; key: K; value: Misskey.entities.ReversiGameDetailed[K]; }) {

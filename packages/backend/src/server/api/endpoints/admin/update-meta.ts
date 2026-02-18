@@ -8,6 +8,7 @@ import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
+import { QueueService } from '@/core/QueueService.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -209,6 +210,7 @@ export const paramDef = {
 		enableRemoteNotesCleaning: { type: 'boolean' },
 		aiModerationEnabled: { type: 'boolean' },
 		aiModerationGeminiApiKey: { type: 'string', nullable: true },
+		runAiModerationGeminiScanNow: { type: 'boolean' },
 		remoteNotesCleaningExpiryDaysForEachNotes: { type: 'number' },
 		remoteNotesCleaningMaxProcessingDurationInMinutes: { type: 'number' },
 		showRoleBadgesOfRemoteUsers: { type: 'boolean' },
@@ -221,6 +223,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
+		private queueService: QueueService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const set = {} as Partial<MiMeta>;
@@ -769,6 +772,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				before,
 				after,
 			});
+
+			if (ps.runAiModerationGeminiScanNow === true) {
+				await this.queueService.createAiModerationGeminiJob(true);
+			}
 		});
 	}
 }

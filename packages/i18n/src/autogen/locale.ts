@@ -6979,6 +6979,44 @@ export interface Locale extends ILocale {
             "none": string;
         };
     };
+    "_aiModerationGemini": {
+        /**
+         * AIルールモデレーション（Gemini）
+         */
+        "title": string;
+        /**
+         * 定期ルールスキャンを有効にする
+         */
+        "enable": string;
+        /**
+         * Gemini 2.5 Flash-Liteで新規投稿を定期チェックし、違反候補を通報として送信します。
+         */
+        "enableDescription": string;
+        /**
+         * Gemini APIキー
+         */
+        "apiKey": string;
+        /**
+         * Google AI StudioのAPIキー。空にするとAPIリクエストは停止します。
+         */
+        "apiKeyDescription": string;
+        /**
+         * 今すぐスキャンを実行
+         */
+        "manualRun": string;
+        /**
+         * スキャンを実行中...
+         */
+        "manualRunRunning": string;
+        /**
+         * 最終チェック済みノートID
+         */
+        "lastCheckedNoteId": string;
+        /**
+         * 検出された違反候補は通報として届きます。確認と対応は
+         */
+        "reviewHint": string;
+    };
     "_accountMigration": {
         /**
          * 別のアカウントからこのアカウントに移行

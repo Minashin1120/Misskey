@@ -45,10 +45,10 @@ export class AiModerationGeminiProcessorService {
 	}
 
 	@bindThis
-	public async process(): Promise<void> {
+	public async process(forceRun = false): Promise<void> {
 		const meta = await this.metaService.fetch(true);
 
-		if (!meta.aiModerationEnabled) {
+		if (!forceRun && !meta.aiModerationEnabled) {
 			this.logger.debug('AI moderation is disabled. skip.');
 			return;
 		}

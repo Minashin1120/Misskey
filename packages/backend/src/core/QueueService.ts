@@ -762,6 +762,22 @@ export class QueueService {
 	}
 
 	@bindThis
+	public createAiModerationGeminiJob(forceRun = false) {
+		return this.systemQueue.add('aiModerationGemini', {
+			forceRun,
+		}, {
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
+		});
+	}
+
+	@bindThis
 	public async queueRetryJob(queueType: typeof QUEUE_TYPES[number], jobId: string) {
 		const queue = this.getQueue(queueType);
 		const job = await queue.getJob(jobId);

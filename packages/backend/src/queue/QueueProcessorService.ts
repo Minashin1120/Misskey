@@ -178,7 +178,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'checkModeratorsActivity': return this.checkModeratorsActivityProcessorService.process();
 					case 'clean': return this.cleanProcessorService.process();
 					case 'cleanRemoteNotes': return this.cleanRemoteNotesProcessorService.process(job);
-					case 'aiModerationGemini': return this.aiModerationGeminiProcessorService.process();
+					case 'aiModerationGemini': return this.aiModerationGeminiProcessorService.process(job.data?.forceRun === true);
 					default: throw new Error(`unrecognized job type ${job.name} for system`);
 				}
 			};

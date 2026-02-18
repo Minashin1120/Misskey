@@ -1763,6 +1763,8 @@ _aiModerationGemini:
   enableDescription: "Scan new posts with Gemini 2.5 Flash-Lite and report violation candidates to moderators."
   apiKey: "Gemini API key"
   apiKeyDescription: "Google AI Studio API key. Leave empty to disable requests."
+  manualRun: "Run scan now"
+  manualRunRunning: "Running scan..."
   lastCheckedNoteId: "Last scanned note ID"
   reviewHint: "Detected violations are sent as abuse reports. Review and take action from"
 _accountMigration:

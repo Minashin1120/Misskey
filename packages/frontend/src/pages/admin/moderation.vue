@@ -39,27 +39,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<SearchMarker :keywords="['ai', 'gemini', 'moderation', 'rules']">
 					<MkFolder>
 						<template #icon><SearchIcon><i class="ti ti-sparkles"></i></SearchIcon></template>
-						<template #label><SearchLabel>AI Rule Moderation (Gemini)</SearchLabel></template>
+						<template #label><SearchLabel>AIルールモデレーション（Gemini）</SearchLabel></template>
 
 						<div class="_gaps">
 							<MkSwitch :modelValue="aiModerationEnabled" @update:modelValue="onChange_aiModerationEnabled">
-								<template #label><SearchLabel>Enable periodic rule scan</SearchLabel></template>
-								<template #caption>Scan new posts with Gemini 2.5 Flash-Lite and report violation candidates.</template>
+								<template #label><SearchLabel>定期ルールスキャンを有効にする</SearchLabel></template>
+								<template #caption>Gemini 2.5 Flash-Liteで新規投稿を定期チェックし、違反候補を通報として送信します。</template>
 							</MkSwitch>
 
 							<MkInput v-model="aiModerationGeminiApiKey" type="password" autocomplete="off">
-								<template #label>Gemini API key</template>
-								<template #caption>Google AI Studio API key. Leave empty to stop external requests.</template>
+								<template #label>Gemini APIキー</template>
+								<template #caption>Google AI StudioのAPIキー。空にするとAPIリクエストは停止します。</template>
 							</MkInput>
 
 							<MkButton primary @click="save_aiModerationGeminiApiKey">{{ i18n.ts.save }}</MkButton>
+							<MkButton :disabled="aiModerationManualScanRunning" @click="run_aiModerationGeminiScanNow">
+								{{ aiModerationManualScanRunning ? 'スキャンを実行中...' : '今すぐスキャンを実行' }}
+							</MkButton>
 
 							<div v-if="aiModerationLastCheckedNoteId" class="_fullinfo">
-								Last scanned note ID: <code>{{ aiModerationLastCheckedNoteId }}</code>
+								最終チェック済みノートID: <code>{{ aiModerationLastCheckedNoteId }}</code>
 							</div>
 
 							<div class="_fullinfo">
-								Detected violations are sent as reports. Review from <MkA class="_link" to="/admin/abuses">{{ i18n.ts.abuseReports }}</MkA>
+								検出された違反候補は通報として届きます。確認と対応は <MkA class="_link" to="/admin/abuses">{{ i18n.ts.abuseReports }}</MkA>
 							</div>
 						</div>
 					</MkFolder>
@@ -229,6 +232,7 @@ const mediaSilencedHosts = ref(meta.mediaSilencedHosts.join('\n'));
 const aiModerationEnabled = ref(!!meta.aiModerationEnabled);
 const aiModerationGeminiApiKey = ref(meta.aiModerationGeminiApiKey ?? '');
 const aiModerationLastCheckedNoteId = ref(meta.aiModerationLastCheckedNoteId ?? '');
+const aiModerationManualScanRunning = ref(false);
 
 async function onChange_enableRegistration(value: boolean) {
 	if (value) {
@@ -346,6 +350,19 @@ function save_aiModerationGeminiApiKey() {
 		aiModerationGeminiApiKey: string | null;
 	}).then(() => {
 		fetchInstance(true);
+	});
+}
+
+function run_aiModerationGeminiScanNow() {
+	aiModerationManualScanRunning.value = true;
+	os.apiWithDialog('admin/update-meta', {
+		runAiModerationGeminiScanNow: true,
+	} as Misskey.Endpoints['admin/update-meta']['req'] & {
+		runAiModerationGeminiScanNow: boolean;
+	}).then(() => {
+		os.success();
+	}).finally(() => {
+		aiModerationManualScanRunning.value = false;
 	});
 }
 

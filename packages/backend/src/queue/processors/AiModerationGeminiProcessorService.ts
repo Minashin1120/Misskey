@@ -121,7 +121,7 @@ export class AiModerationGeminiProcessorService {
 					appAccessTokenId: null,
 					customHeader: '違反の可能性があるノートを確認中です',
 					customBody: 'あなたのノートにサーバールール違反の可能性が検出されました。モデレーターが確認中です。確認結果により削除される場合があります。',
-					customIcon: null,
+					customIcon: new URL('/static-assets/tabler-badges/bell.png', this.config.url).toString(),
 				});
 
 				this.logger.warn(`Violation candidate detected noteId=${note.id}`);

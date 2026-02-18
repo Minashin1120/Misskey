@@ -123,6 +123,12 @@ export const meta = {
 			code: 'CONTAINS_TOO_MANY_MENTIONS',
 			id: '4de0363a-3046-481b-9b0f-feff3e211025',
 		},
+
+		notePostingRestricted: {
+			message: 'Cannot post because note posting is restricted by moderation action.',
+			code: 'NOTE_POSTING_RESTRICTED',
+			id: '65f9b104-7ae8-43a7-b2f8-daa8d9cf5300',
+		},
 	},
 } as const;
 
@@ -269,6 +275,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw new ApiError(meta.errors.noSuchChannel);
 					} else if (err.id === '7e435f4a-780d-4cfc-a15a-42519bd6fb67') {
 						throw new ApiError(meta.errors.cannotRenoteOutsideOfChannel);
+					} else if (err.id === 'fcb721ce-bf4c-48d7-9017-1dc88c0f4a45') {
+						throw new ApiError(meta.errors.notePostingRestricted);
 					} else if (err.id === '60142edb-1519-408e-926d-4f108d27bee0') {
 						throw new ApiError(meta.errors.noSuchReplyTarget);
 					} else if (err.id === 'f089e4e2-c0e7-4f60-8a23-e5a6bf786b36') {

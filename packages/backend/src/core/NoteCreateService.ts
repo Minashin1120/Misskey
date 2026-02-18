@@ -145,6 +145,8 @@ type Option = {
 	app?: MiApp | null;
 };
 
+const temporaryNoteRestrictionRoleName = '[Auto] Temporary Note Restriction';
+
 @Injectable()
 export class NoteCreateService implements OnApplicationShutdown {
 	#shutdownController = new AbortController();
@@ -419,6 +421,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 		if (data.channel != null) data.visibility = 'public';
 		if (data.channel != null) data.visibleUsers = [];
 		if (data.channel != null) data.localOnly = true;
+
+		const userRoles = await this.roleService.getUserRoles(user.id);
+		if (userRoles.some(role => role.target === 'manual' && role.name === temporaryNoteRestrictionRoleName)) {
+			throw new IdentifiableError('fcb721ce-bf4c-48d7-9017-1dc88c0f4a45', 'Note posting is restricted by moderation action');
+		}
 
 		if (data.visibility === 'public' && data.channel == null) {
 			const sensitiveWords = this.meta.sensitiveWords;

@@ -154,6 +154,94 @@ export function getAbuseNoteMenu(note: Misskey.entities.Note, text: string): Men
 	};
 }
 
+export function getModerationNoteMenu(note: Misskey.entities.Note): MenuItem {
+	const appearNote = getAppearNote(note) ?? note;
+	const runModerationAction = async (action: 'warn' | 'deleteNote' | 'suspendUser' | 'restrictNoteTemporarily') => {
+		let noteIdOrUrl: string | null = null;
+		let restrictHours: number | null = null;
+
+		if (action === 'deleteNote') {
+			noteIdOrUrl = appearNote.id;
+		}
+
+		if (action === 'restrictNoteTemporarily') {
+			const durationInput = await os.inputNumber({
+				title: 'ノート一時停止の期間',
+				text: '停止時間（時間）を入力してください。',
+				default: 24,
+			});
+			if (durationInput.canceled) return;
+			if (durationInput.result <= 0) {
+				os.alert({
+					type: 'error',
+					text: '1以上の時間を指定してください。',
+				});
+				return;
+			}
+			restrictHours = Math.floor(durationInput.result);
+		}
+
+		const reasonInput = await os.inputText({
+			title: 'ユーザーへ通知する理由',
+			text: '実行理由を入力してください（空でも可）。入力内容は対象ユーザーへのダイアログに表示されます。',
+			default: '',
+		});
+		if (reasonInput.canceled) return;
+
+		const actionLabel = action === 'warn' ? '警告'
+			: action === 'deleteNote' ? 'ノート削除'
+			: action === 'suspendUser' ? 'アカウント凍結'
+			: 'ノート一時停止';
+
+		const confirmed = await os.confirm({
+			type: 'warning',
+			text: `「${actionLabel}」を実行します。よろしいですか？`,
+		});
+		if (confirmed.canceled) return;
+
+		await os.apiWithDialog('admin/perform-moderation-action', {
+			userId: appearNote.userId,
+			action,
+			reason: reasonInput.result,
+			noteIdOrUrl,
+			restrictHours,
+			notifyTarget: true,
+		});
+
+		if (action === 'deleteNote') {
+			globalEvents.emit('noteDeleted', appearNote.id);
+		}
+	};
+
+	return {
+		type: 'parent',
+		icon: 'ti ti-shield',
+		text: 'モデレーション',
+		children: () => {
+			return [{
+				icon: 'ti ti-alert-triangle',
+				text: '警告',
+				action: () => runModerationAction('warn'),
+			}, {
+				icon: 'ti ti-trash',
+				text: 'ノート削除',
+				danger: true,
+				action: () => runModerationAction('deleteNote'),
+			}, {
+				icon: 'ti ti-clock-pause',
+				text: 'ノート一時停止',
+				action: () => runModerationAction('restrictNoteTemporarily'),
+			}, {
+				icon: 'ti ti-user-off',
+				text: 'アカウント凍結',
+				danger: true,
+				action: () => runModerationAction('suspendUser'),
+			}];
+		},
+	};
+}
+
+
 export function getCopyNoteLinkMenu(note: Misskey.entities.Note, text: string): MenuItem {
 	return {
 		icon: 'ti ti-link',
@@ -508,6 +596,9 @@ export function getNoteMenu(props: {
 				danger: true,
 				action: del,
 			});
+			if ($i.isModerator || $i.isAdmin) {
+				menuItems.push(getModerationNoteMenu(appearNote));
+			}
 		}
 	} else {
 		menuItems.push({

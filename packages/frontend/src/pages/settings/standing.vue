@@ -8,10 +8,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_gaps_m">
 		<div class="tabs">
 			<MkButton rounded @click="goSecurity"><i class="ti ti-lock"></i> {{ i18n.ts.security }}</MkButton>
-			<MkButton primary rounded disabled><i class="ti ti-shield-lock"></i> {{ $t("_accountStanding.labels.suspended") }}</MkButton>
+			<MkButton primary rounded disabled><i class="ti ti-shield-lock"></i> {{ currentTabLabel }}</MkButton>
 		</div>
 
-		<MkInfo>{{ $t("_accountStanding.description") }}</MkInfo>
+		<MkInfo>{{ standingDescriptionLead }}</MkInfo>
 		<MkInfo v-if="errorMessage" warn>{{ errorMessage }}</MkInfo>
 
 		<div v-if="loading" class="loading">{{ i18n.ts.loading }}</div>
@@ -113,7 +113,17 @@ const loading = ref(true);
 const errorMessage = ref<string | null>(null);
 const health = ref<AccountHealthResponse | null>(null);
 
-const labels = ['All good', 'Limited', 'Very limited', 'At risk', 'Suspended'];
+const standingText = computed(() => i18n.ts._accountStanding);
+const standingTitle = computed(() => standingText.value?.title ?? 'Account Standing');
+const standingDescriptionLead = computed(() => standingText.value?.description ?? 'This status can only be viewed by you, admins, and moderators.');
+const currentTabLabel = computed(() => standingTitle.value);
+const labels = computed(() => [
+	standingText.value?.labels?.allGood ?? 'All good',
+	standingText.value?.labels?.limited ?? 'Limited',
+	standingText.value?.labels?.veryLimited ?? 'Very limited',
+	standingText.value?.labels?.atRisk ?? 'At risk',
+	standingText.value?.labels?.suspended ?? 'Suspended',
+]);
 
 const level = computed(() => {
 	const h = health.value;
@@ -126,14 +136,14 @@ const level = computed(() => {
 });
 
 const standingHeadline = computed(() => {
-	if (level.value === 0) return 'Your account is all good';
-	if (level.value === 4) return 'Your account is suspended';
-	return 'Your account has restrictions';
+	if (level.value === 0) return standingText.value?.headline?.allGood ?? 'Your account is all good';
+	if (level.value === 4) return standingText.value?.headline?.suspended ?? 'Your account is suspended';
+	return standingText.value?.headline?.restricted ?? 'Your account has restrictions';
 });
 
 const standingDescription = computed(() => {
-	if (level.value === 0) return 'Thanks for following our rules.';
-	return 'If you break the rules, restrictions will appear here.';
+	if (level.value === 0) return standingText.value?.descriptionText?.allGood ?? 'Thanks for following our rules.';
+	return standingText.value?.descriptionText?.restricted ?? 'If you break the rules, restrictions will appear here.';
 });
 
 const activeViolations = computed<ActiveViolation[]>(() => {
@@ -197,7 +207,7 @@ async function fetchAccountHealth() {
 	try {
 		health.value = await misskeyApi('i/account-health' as any, {});
 	} catch (err) {
-		errorMessage.value = err?.message ?? 'Failed to load account standing.';
+		errorMessage.value = err?.message ?? standingText.value?.loadingFailed ?? 'Failed to load account standing.';
 	} finally {
 		loading.value = false;
 	}
@@ -208,7 +218,7 @@ onMounted(() => {
 });
 
 definePage(() => ({
-	title: 'Account Standing',
+	title: standingTitle.value,
 	icon: 'ti ti-shield-lock',
 }));
 </script>

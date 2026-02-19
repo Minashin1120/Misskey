@@ -252,6 +252,7 @@ export * as 'i/2fa/remove-key' from './endpoints/i/2fa/remove-key.js';
 export * as 'i/2fa/unregister' from './endpoints/i/2fa/unregister.js';
 export * as 'i/2fa/update-key' from './endpoints/i/2fa/update-key.js';
 export * as 'i/apps' from './endpoints/i/apps.js';
+export * as 'i/account-health' from './endpoints/i/account-health.js';
 export * as 'i/authorized-apps' from './endpoints/i/authorized-apps.js';
 export * as 'i/change-password' from './endpoints/i/change-password.js';
 export * as 'i/claim-achievement' from './endpoints/i/claim-achievement.js';

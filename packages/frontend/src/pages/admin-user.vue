@@ -56,6 +56,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #caption>{{ i18n.ts.moderationNoteDescription }}</template>
 			</MkTextarea>
 
+			<MkFolder v-if="!isSystem">
+				<template #icon><i class="ti ti-shield-check"></i></template>
+				<template #label>アカウント健全性ステータス</template>
+				<div class="_gaps_s">
+					<MkInfo>この情報は本人または管理者・モデレーターのみ閲覧できます。</MkInfo>
+					<MkInfo v-if="accountHealthError" warn>{{ accountHealthError }}</MkInfo>
+					<div v-if="accountHealth">
+						<div>制限状態: {{ accountHealth.isRestricted ? '制限中' : '制限なし' }}</div>
+						<div>凍結: {{ accountHealth.statuses.isSuspended ? '有効' : 'なし' }}</div>
+						<div>サイレンス: {{ accountHealth.statuses.isSilenced ? '有効' : 'なし' }}</div>
+						<div>ノート一時停止: {{ accountHealth.statuses.isTemporaryNoteRestricted ? '有効' : 'なし' }}</div>
+						<div v-if="accountHealth.statuses.temporaryNoteRestrictionExpiresAt">
+							ノート一時停止期限: <MkTime :time="accountHealth.statuses.temporaryNoteRestrictionExpiresAt" mode="detail"/>
+						</div>
+					</div>
+					<div v-else>読み込み中...</div>
+
+					<MkFolder :defaultOpen="true">
+						<template #label>モデレーション履歴（最新{{ accountHealth?.history?.length ?? 0 }}件）</template>
+						<div class="_gaps_s">
+							<div v-if="!accountHealth || accountHealth.history.length === 0">履歴はありません。</div>
+							<div v-for="item in accountHealth?.history ?? []" :key="item.id" class="_panel" style="padding: 12px;">
+								<div><MkTime :time="item.createdAt" mode="detail"/> / {{ item.summary }}</div>
+								<div style="opacity: 0.8; font-size: 0.9em;">実施者: @{{ item.moderator.username }}</div>
+							</div>
+						</div>
+					</MkFolder>
+				</div>
+			</MkFolder>
+
 			<!--
 				<FormSection>
 					<template #label>ActivityPub</template>
@@ -257,6 +287,8 @@ const {
 const user = ref(result.user);
 const info = ref(result.info);
 const ips = ref(result.ips);
+const accountHealth = ref(result.accountHealth);
+const accountHealthError = ref<string | null>(result.accountHealthError);
 const ap = ref<Misskey.entities.ApGetResponse | null>(null);
 const moderator = ref(info.value.isModerator);
 const silenced = ref(info.value.isSilenced);
@@ -297,10 +329,20 @@ function _fetch_() {
 		userId: props.userId,
 	}), iAmAdmin ? misskeyApi('admin/get-user-ips', {
 		userId: props.userId,
-	}) : Promise.resolve(null)]).then(([_user, _info, _ips]) => ({
+	}) : Promise.resolve(null), misskeyApi('i/account-health' as any, {
+		userId: props.userId,
+	}).then(data => ({
+		data,
+		error: null,
+	})).catch(err => ({
+		data: null,
+		error: err?.message ?? '取得に失敗しました。',
+	}))]).then(([_user, _info, _ips, _accountHealth]) => ({
 		user: _user,
 		info: _info,
 		ips: _ips,
+		accountHealth: _accountHealth.data,
+		accountHealthError: _accountHealth.error,
 	}));
 }
 
@@ -314,6 +356,8 @@ async function refreshUser() {
 	user.value = result.user;
 	info.value = result.info;
 	ips.value = result.ips;
+	accountHealth.value = result.accountHealth;
+	accountHealthError.value = result.accountHealthError;
 	moderator.value = info.value.isModerator;
 	silenced.value = info.value.isSilenced;
 	suspended.value = info.value.isSuspended;

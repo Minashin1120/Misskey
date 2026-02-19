@@ -113,7 +113,7 @@ const loading = ref(true);
 const errorMessage = ref<string | null>(null);
 const health = ref<AccountHealthResponse | null>(null);
 
-const standingText = computed(() => i18n.ts._accountStanding);
+const standingText = computed(() => ({ ...(i18n.ts._accountStanding ?? {}) }) as any);
 const standingTitle = computed(() => standingText.value?.title ?? 'Account Standing');
 const standingDescriptionLead = computed(() => standingText.value?.description ?? 'This status can only be viewed by you, admins, and moderators.');
 const currentTabLabel = computed(() => standingTitle.value);

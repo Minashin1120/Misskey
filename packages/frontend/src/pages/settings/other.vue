@@ -47,11 +47,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</SearchMarker>
 
 						<SearchMarker :keywords="['account', 'health', 'moderation', 'status']">
-										<FormLink to="/settings/standing">
-											<template #icon><i class="ti ti-shield-check"></i></template>
-											<SearchLabel>Account Standing</SearchLabel>
-										</FormLink>
-									</SearchMarker>
+							<FormLink to="/settings/standing">
+								<template #icon><SearchIcon><i class="ti ti-shield-check"></i></SearchIcon></template>
+								<SearchLabel>Account Standing</SearchLabel>
+							</FormLink>
+						</SearchMarker>
 					</div>
 				</MkFolder>
 			</SearchMarker>

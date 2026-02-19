@@ -7,8 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 <SearchMarker path="/settings/standing" label="Account Standing" :keywords="['account', 'standing', 'health', 'moderation']" icon="ti ti-shield-check">
 	<div class="_gaps_m">
 		<div class="tabs">
-			<MkButton rounded @click="goSecurity">{{ i18n.ts.security }}</MkButton>
-			<MkButton primary rounded disabled>Standing</MkButton>
+			<MkButton rounded @click="goSecurity"><i class="ti ti-lock"></i> {{ i18n.ts.security }}</MkButton>
+			<MkButton primary rounded disabled><i class="ti ti-shield-check"></i> Standing</MkButton>
 		</div>
 
 		<MkInfo>Only you, admins, and moderators can view this status.</MkInfo>

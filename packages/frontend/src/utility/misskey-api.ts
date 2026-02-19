@@ -9,6 +9,22 @@ import { apiUrl } from '@@/js/config.js';
 import { $i } from '@/i.js';
 export const pendingApiRequestsCount = ref(0);
 
+async function parseJsonResponse(res: Response): Promise<any> {
+	if (res.status === 204) return null;
+
+	const text = await res.text();
+	if (text.length === 0) return null;
+
+	try {
+		return JSON.parse(text);
+	} catch {
+		const responseError = new Error(`Invalid API response (status: ${res.status})`);
+		(responseError as any).status = res.status;
+		(responseError as any).responseText = text.slice(0, 300);
+		throw responseError;
+	}
+}
+
 // Implements Misskey.api.ApiClient.request
 export function misskeyApi<
 	ResT = void,
@@ -44,14 +60,14 @@ export function misskeyApi<
 			},
 			signal,
 		}).then(async (res) => {
-			const body = res.status === 204 ? null : await res.json();
+			const body = await parseJsonResponse(res);
 
 			if (res.status === 200) {
 				resolve(body);
 			} else if (res.status === 204) {
 				resolve(undefined as _ResT); // void -> undefined
 			} else {
-				reject(body.error);
+				reject(body?.error ?? body ?? new Error(`API request failed (status: ${res.status})`));
 			}
 		}).catch(reject);
 	});
@@ -86,14 +102,14 @@ export function misskeyApiGet<
 			credentials: 'omit',
 			cache: 'default',
 		}).then(async (res) => {
-			const body = res.status === 204 ? null : await res.json();
+			const body = await parseJsonResponse(res);
 
 			if (res.status === 200) {
 				resolve(body);
 			} else if (res.status === 204) {
 				resolve(undefined as _ResT); // void -> undefined
 			} else {
-				reject(body.error);
+				reject(body?.error ?? body ?? new Error(`API request failed (status: ${res.status})`));
 			}
 		}).catch(reject);
 	});

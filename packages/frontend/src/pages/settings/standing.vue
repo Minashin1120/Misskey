@@ -207,7 +207,10 @@ async function fetchAccountHealth() {
 	try {
 		health.value = await misskeyApi('i/account-health' as any, {});
 	} catch (err) {
-		errorMessage.value = err?.message ?? standingText.value?.loadingFailed ?? 'Failed to load account standing.';
+		const message = typeof err?.message === 'string' ? err.message : '';
+		errorMessage.value = message.startsWith('Invalid API response')
+			? standingText.value?.loadingFailed ?? 'Failed to load account standing.'
+			: message || standingText.value?.loadingFailed || 'Failed to load account standing.';
 	} finally {
 		loading.value = false;
 	}

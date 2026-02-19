@@ -77,7 +77,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</header>
 			<div :class="$style.noteContent">
-				<div v-if="hasAiModerationViolation" :class="$style.aiModerationWarning">違反フラグが付与されています</div>
+				<div v-if="hasAiModerationViolation" :class="$style.aiModerationWarning">{{ $t("_aiModeration.violationDetected") }}</div>
 				<p v-if="appearNote.cw != null" :class="$style.cw">
 					<Mfm
 						v-if="appearNote.cw != ''"

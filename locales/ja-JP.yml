@@ -3529,3 +3529,67 @@ _qr:
   scanFile: "端末の画像をスキャン"
   raw: "テキスト"
   mfm: "MFM"
+
+_visitorDashboard:
+  building: "現在、Misskeyサーバーは構築準備中です。"
+  pleaseLogin: "管理者の方はログインしてください。"
+  registrationStopped: "現在、新規アカウント登録を停止しています。"
+
+_aiModeration:
+  violationDetected: "違反フラグが付与されています"
+  violationNoteHeader: "違反の可能性があるノートを確認中です"
+  violationNoteBody: "あなたのノートにサーバールール違反の可能性が検出されました。自動対応: {action}。モデレーターが確認中です。"
+  actionLabels:
+    delete: "ノートを削除"
+    hideFromOthers: "投稿者本人以外には非表示"
+    homeOnly: "ホームタイムラインのみに制限"
+    flagOnly: "フラグ付与のみ"
+    keepAndFlag: "既存の公開範囲を維持してフラグ付与"
+
+_accountStanding:
+  title: "アカウントの健全性"
+  description: "このステータスは、あなた、管理者、およびモデレーターのみが閲覧できます。"
+  labels:
+    allGood: "問題なし"
+    limited: "制限あり"
+    veryLimited: "強い制限あり"
+    atRisk: "リスクあり"
+    suspended: "凍結"
+  headline:
+    allGood: "あなたのアカウントは健全です"
+    suspended: "あなたのアカウントは凍結されています"
+    restricted: "あなたのアカウントには制限があります"
+  descriptionText:
+    allGood: "ルールを守っていただきありがとうございます。"
+    restricted: "ルールに違反した場合、ここに制限が表示されます。"
+  activeViolations: "有効な違反 - {n}"
+  activeViolationsDescription: "これらは、期限が切れるまでアカウントのステータスに影響します。"
+  noActiveViolations: "有効な違反はありません。"
+  expiredViolations: "期限切れの違反 - {n}"
+  expiredViolationsDescription: "これらは、もうアカウントのステータスに影響しません。"
+  noExpiredViolations: "期限切れの違反はありません。"
+  expires: "期限: "
+  loadingFailed: "アカウントのステータス読み込みに失敗しました。"
+
+_moderation:
+  title: "モデレーション"
+  warn: "警告"
+  deleteNote: "ノート削除"
+  suspendUser: "アカウント凍結"
+  restrictNoteTemporarily: "ノート一時停止"
+  restrictionDuration: "ノート一時停止の期間"
+  enterRestrictionHours: "停止時間（時間）を入力してください。"
+  invalidHours: "1 以上の時間を指定してください。"
+  reasonToNotify: "ユーザーへ通知する理由"
+  enterReason: "実行理由を入力してください（空でも可）。入力内容は対象ユーザーへのダイアログに表示されます。"
+  confirmAction: "「{action}」を実行します。よろしいですか？"
+  notificationTitle: "規約違反に関する重要なお知らせ"
+  notificationBody: "運営チームより、あなたのアカウントに関するモデレーション対応のお知らせです。"
+  actionDetailDefault: "運営チームにより、一部の機能制限または対応が実施されました。"
+  actionDetailWarn: "利用規約に抵触する行為が確認されたため、警告を発行しました。今後の活動にご注意ください。"
+  actionDetailDeleteNote: "規約違反に該当する内容が含まれていたため、対象のノートを削除しました。 (#{id})"
+  actionDetailSuspend: "重大な規約違反、または繰り返しの違反が確認されたため、アカウントを凍結しました。"
+  actionDetailRestrictNote: "規約違反が確認されたため、一定期間ノートの投稿を制限しました。 ({hours}時間)"
+  noReasonProvided: "（詳細理由は記載されていません）"
+  reasonLabel: "詳細理由: "
+  reportIdLabel: "通報ID: "

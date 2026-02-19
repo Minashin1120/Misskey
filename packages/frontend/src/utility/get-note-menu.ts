@@ -166,15 +166,15 @@ export function getModerationNoteMenu(note: Misskey.entities.Note): MenuItem {
 
 		if (action === 'restrictNoteTemporarily') {
 			const durationInput = await os.inputNumber({
-				title: 'ノート一時停止の期間',
-				text: '停止時間（時間）を入力してください。',
+				title: i18n.ts._moderation.restrictionDuration,
+				text: i18n.ts._moderation.enterRestrictionHours,
 				default: 24,
 			});
 			if (durationInput.canceled) return;
 			if (durationInput.result <= 0) {
 				os.alert({
 					type: 'error',
-					text: '1以上の時間を指定してください。',
+					text: i18n.ts._moderation.invalidHours,
 				});
 				return;
 			}
@@ -182,20 +182,20 @@ export function getModerationNoteMenu(note: Misskey.entities.Note): MenuItem {
 		}
 
 		const reasonInput = await os.inputText({
-			title: 'ユーザーへ通知する理由',
-			text: '実行理由を入力してください（空でも可）。入力内容は対象ユーザーへのダイアログに表示されます。',
+			title: i18n.ts._moderation.reasonToNotify,
+			text: i18n.ts._moderation.enterReason,
 			default: '',
 		});
 		if (reasonInput.canceled) return;
 
-		const actionLabel = action === 'warn' ? '警告'
-			: action === 'deleteNote' ? 'ノート削除'
-			: action === 'suspendUser' ? 'アカウント凍結'
-			: 'ノート一時停止';
+		const actionLabel = action === 'warn' ? i18n.ts._moderation.warn
+			: action === 'deleteNote' ? i18n.ts._moderation.deleteNote
+			: action === 'suspendUser' ? i18n.ts._moderation.suspendUser
+			: i18n.ts._moderation.restrictNoteTemporarily;
 
 		const confirmed = await os.confirm({
 			type: 'warning',
-			text: `「${actionLabel}」を実行します。よろしいですか？`,
+			text: i18n.tsx._moderation.confirmAction({ action: actionLabel }),
 		});
 		if (confirmed.canceled) return;
 
@@ -216,24 +216,24 @@ export function getModerationNoteMenu(note: Misskey.entities.Note): MenuItem {
 	return {
 		type: 'parent',
 		icon: 'ti ti-shield',
-		text: 'モデレーション',
+		text: i18n.ts._moderation.title,
 		children: () => {
 			return [{
 				icon: 'ti ti-alert-triangle',
-				text: '警告',
+				text: i18n.ts._moderation.warn,
 				action: () => runModerationAction('warn'),
 			}, {
 				icon: 'ti ti-trash',
-				text: 'ノート削除',
+				text: i18n.ts._moderation.deleteNote,
 				danger: true,
 				action: () => runModerationAction('deleteNote'),
 			}, {
 				icon: 'ti ti-clock-pause',
-				text: 'ノート一時停止',
+				text: i18n.ts._moderation.restrictNoteTemporarily,
 				action: () => runModerationAction('restrictNoteTemporarily'),
 			}, {
 				icon: 'ti ti-user-off',
-				text: 'アカウント凍結',
+				text: i18n.ts._moderation.suspendUser,
 				danger: true,
 				action: () => runModerationAction('suspendUser'),
 			}];

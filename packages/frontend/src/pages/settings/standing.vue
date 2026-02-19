@@ -4,14 +4,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker path="/settings/standing" label="Account Standing" :keywords="['account', 'standing', 'health', 'moderation']" icon="ti ti-shield-lock">
+<SearchMarker path="/settings/standing" :label="i18n.ts._accountStanding.title" :keywords="['account', 'standing', 'health', 'moderation']" icon="ti ti-shield-lock">
 	<div class="_gaps_m">
 		<div class="tabs">
 			<MkButton rounded @click="goSecurity"><i class="ti ti-lock"></i> {{ i18n.ts.security }}</MkButton>
-			<MkButton primary rounded disabled><i class="ti ti-shield-lock"></i> Standing</MkButton>
+			<MkButton primary rounded disabled><i class="ti ti-shield-lock"></i> {{ $t("_accountStanding.labels.suspended") }}</MkButton>
 		</div>
 
-		<MkInfo>Only you, admins, and moderators can view this status.</MkInfo>
+		<MkInfo>{{ $t("_accountStanding.description") }}</MkInfo>
 		<MkInfo v-if="errorMessage" warn>{{ errorMessage }}</MkInfo>
 
 		<div v-if="loading" class="loading">{{ i18n.ts.loading }}</div>
@@ -37,16 +37,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div class="sectionHeader">
 					<i class="ti ti-alert-triangle icon"></i>
 					<div>
-						<div class="sectionTitle">Active violations - {{ activeViolations.length }}</div>
-						<div class="sectionCaption">These affect your account status until they expire.</div>
+						<div class="sectionTitle">{{ $t("_accountStanding.activeViolations", { n: activeViolations.length }) }}</div>
+						<div class="sectionCaption">{{ $t("_accountStanding.activeViolationsDescription") }}</div>
 					</div>
 				</div>
 
-				<div v-if="activeViolations.length === 0" class="empty">No active violations.</div>
+				<div v-if="activeViolations.length === 0" class="empty">{{ $t("_accountStanding.noActiveViolations") }}</div>
 				<div v-for="item in activeViolations" :key="item.id" class="violationCard">
 					<div class="meta" v-if="item.createdAt"><MkTime :time="item.createdAt" mode="detail"/></div>
 					<div class="summary">{{ item.summary }}</div>
-					<div v-if="item.expiresAt" class="meta">Expires: <MkTime :time="item.expiresAt" mode="detail"/></div>
+					<div v-if="item.expiresAt" class="meta">{{ $t("_accountStanding.expires") }}<MkTime :time="item.expiresAt" mode="detail"/></div>
 				</div>
 			</div>
 
@@ -54,12 +54,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div class="sectionHeader">
 					<i class="ti ti-history icon"></i>
 					<div>
-						<div class="sectionTitle">Expired violations - {{ pastLogs.length }}</div>
-						<div class="sectionCaption">These no longer affect your account status.</div>
+						<div class="sectionTitle">{{ $t("_accountStanding.expiredViolations", { n: pastLogs.length }) }}</div>
+						<div class="sectionCaption">{{ $t("_accountStanding.expiredViolationsDescription") }}</div>
 					</div>
 				</div>
 
-				<div v-if="pastLogs.length === 0" class="empty">No expired violations.</div>
+				<div v-if="pastLogs.length === 0" class="empty">{{ $t("_accountStanding.noExpiredViolations") }}</div>
 				<div v-for="item in pastLogs" :key="item.id" class="violationCard">
 					<div class="meta"><MkTime :time="item.createdAt" mode="detail"/></div>
 					<div class="summary">{{ item.summary }}</div>

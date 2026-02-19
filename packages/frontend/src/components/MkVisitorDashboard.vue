@@ -15,11 +15,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkA to="/">{{ instanceName }}</MkA>
 			</h1>
 				<div :class="$style.mainAbout">
-					<div>現在、Misskeyサーバーは構築準備中です。</div>
-					<div>管理者の方はログインしてください。</div>
+					<div>{{ $t("_visitorDashboard.building") }}</div>
+					<div>{{ $t("_visitorDashboard.pleaseLogin") }}</div>
 				</div>
 				<div :class="$style.mainWarn" class="_gaps_s">
-					<MkInfo warn>現在、新規アカウント登録を停止しています。</MkInfo>
+					<MkInfo warn>{{ $t("_visitorDashboard.registrationStopped") }}</MkInfo>
 					<MkInfo v-if="instance.federation === 'specified'" warn>{{ i18n.ts.federationSpecified }}</MkInfo>
 					<MkInfo v-else-if="instance.federation === 'none'" warn>{{ i18n.ts.federationDisabled }}</MkInfo>
 				</div>

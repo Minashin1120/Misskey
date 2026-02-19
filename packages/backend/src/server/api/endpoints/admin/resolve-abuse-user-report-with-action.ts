@@ -1,3 +1,6 @@
+import locales from 'i18n';
+import { I18n } from '@/misc/i18n.js';
+import type { UserProfilesRepository } from '@/models/_.js';
 /*
  * SPDX-FileCopyrightText: syuilo and misskey-project
  * SPDX-License-Identifier: AGPL-3.0-only
@@ -101,6 +104,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 
+                @Inject(DI.userProfilesRepository)
+                private userProfilesRepository: UserProfilesRepository,
+
 		@Inject(DI.rolesRepository)
 		private rolesRepository: RolesRepository,
 
@@ -123,7 +129,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			                        const normalizedReason = (ps.reason ?? '').trim();
-			                        let actionDetail = '運営チームにより、一部の機能制限または対応が実施されました。';
+			                        let actionDetail = i18n.t('_moderation.actionDetailDefault');
 			
 			                        switch (ps.action) {
 			                                case 'warn': {
@@ -183,17 +189,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}], me);
 
 			                        if (ps.notifyTarget && targetUser.host == null) {
-			                                const reasonText = normalizedReason.length > 0 ? normalizedReason : '（詳細理由は記載されていません）';
+			                                const reasonText = normalizedReason.length > 0 ? normalizedReason : i18n.t('_moderation.noReasonProvided');
 			                                const body = [
 			                                        '運営チームより、あなたのアカウントに関するモデレーション対応のお知らせです。',
 			                                        actionDetail,
 			                                        '',
-			                                        `詳細理由: ${reasonText}`,
-			                                        `通報ID: ${report.id}`,
+			                                        i18n.t('_moderation.reasonLabel') + reasonText,
+			                                        i18n.t('_moderation.reportIdLabel') + report.id,
 			                                ].join('\n');
 			
 			                                await this.announcementService.create({
-			                                        title: '規約違反に関する重要なお知らせ',
+			                                        title: i18n.t('_moderation.notificationTitle'),
 			                                        text: body,
 			                                        imageUrl: null,
 			                                        icon: 'warning',

@@ -1,3 +1,4 @@
+import locales from 'i18n';
 /*
  * SPDX-FileCopyrightText: syuilo and misskey-project
  * SPDX-License-Identifier: AGPL-3.0-only
@@ -55,6 +56,9 @@ export class AiModerationGeminiProcessorService {
 
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
+
+                @Inject(DI.userProfilesRepository)
+                private userProfilesRepository: UserProfilesRepository,
 
 		private metaService: MetaService,
 		private abuseReportService: AbuseReportService,
@@ -235,7 +239,7 @@ export class AiModerationGeminiProcessorService {
 			case 'delete': {
 				const noteAuthor = await this.usersRepository.findOneByOrFail({ id: note.userId });
 				await this.noteDeleteService.delete(noteAuthor, note, true);
-				return 'ノートを削除';
+				return i18n.t('_aiModeration.actionLabels.delete');
 			}
 			case 'hideFromOthers': {
 				await this.notesRepository.update(note.id, {
@@ -243,7 +247,7 @@ export class AiModerationGeminiProcessorService {
 					visibleUserIds: [note.userId],
 					aiModerationViolation: true,
 				});
-				return '投稿者本人以外には非表示';
+				return i18n.t('_aiModeration.actionLabels.hideFromOthers');
 			}
 			case 'homeOnly': {
 				if (note.visibility === 'public') {
@@ -251,20 +255,20 @@ export class AiModerationGeminiProcessorService {
 						visibility: 'home',
 						aiModerationViolation: true,
 					});
-					return 'ホームタイムラインのみに制限';
+					return i18n.t('_aiModeration.actionLabels.homeOnly');
 				}
 
 				if (!note.aiModerationViolation) {
 					await this.notesRepository.update(note.id, { aiModerationViolation: true });
 				}
-				return '既存の公開範囲を維持してフラグ付与';
+				return i18n.t('_aiModeration.actionLabels.keepAndFlag');
 			}
 			case 'flagOnly':
 			default: {
 				if (!note.aiModerationViolation) {
 					await this.notesRepository.update(note.id, { aiModerationViolation: true });
 				}
-				return 'フラグ付与のみ';
+				return i18n.t('_aiModeration.actionLabels.flagOnly');
 			}
 		}
 	}

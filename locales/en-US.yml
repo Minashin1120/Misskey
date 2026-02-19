@@ -3405,3 +3405,67 @@ _qr:
   scanFile: "Scan image from device"
   raw: "Text"
   mfm: "MFM"
+
+_visitorDashboard:
+  building: "The Misskey server is currently under construction."
+  pleaseLogin: "If you are an administrator, please log in."
+  registrationStopped: "New account registration is currently stopped."
+
+_aiModeration:
+  violationDetected: "Violation flag applied"
+  violationNoteHeader: "Checking note for potential violations"
+  violationNoteBody: "A potential server rule violation has been detected in your note. Automatic action: {action}. A moderator is reviewing it."
+  actionLabels:
+    delete: "Delete note"
+    hideFromOthers: "Hidden from others"
+    homeOnly: "Limited to home timeline"
+    flagOnly: "Flag only"
+    keepAndFlag: "Keep visibility and flag"
+
+_accountStanding:
+  title: "Account Standing"
+  description: "Only you, admins, and moderators can view this status."
+  labels:
+    allGood: "All good"
+    limited: "Limited"
+    veryLimited: "Very limited"
+    atRisk: "At risk"
+    suspended: "Suspended"
+  headline:
+    allGood: "Your account is all good"
+    suspended: "Your account is suspended"
+    restricted: "Your account has restrictions"
+  descriptionText:
+    allGood: "Thanks for following our rules."
+    restricted: "If you break the rules, restrictions will appear here."
+  activeViolations: "Active violations - {n}"
+  activeViolationsDescription: "These affect your account status until they expire."
+  noActiveViolations: "No active violations."
+  expiredViolations: "Expired violations - {n}"
+  expiredViolationsDescription: "These no longer affect your account status."
+  noExpiredViolations: "No expired violations."
+  expires: "Expires: "
+  loadingFailed: "Failed to load account standing."
+
+_moderation:
+  title: "Moderation"
+  warn: "Warn"
+  deleteNote: "Delete Note"
+  suspendUser: "Suspend User"
+  restrictNoteTemporarily: "Temporary Note Restriction"
+  restrictionDuration: "Restriction duration"
+  enterRestrictionHours: "Please enter the restriction duration (hours)."
+  invalidHours: "Please specify 1 hour or more."
+  reasonToNotify: "Reason to notify user"
+  enterReason: "Enter the reason (optional). This will be displayed in a dialog to the target user."
+  confirmAction: "Execute \"{action}\". Are you sure?"
+  notificationTitle: "Important Notice Regarding Terms of Service Violation"
+  notificationBody: "Notice of moderation action regarding your account from the administration team."
+  actionDetailDefault: "Some functional restrictions or actions have been implemented by the administration team."
+  actionDetailWarn: "A warning has been issued due to behavior that violates the Terms of Service. Please be careful in your future activities."
+  actionDetailDeleteNote: "The target note has been deleted because it contained content that violated the terms. (#{id})"
+  actionDetailSuspend: "The account has been suspended due to serious or repeated violations of the terms."
+  actionDetailRestrictNote: "Note posting has been restricted for a certain period due to a terms violation. ({hours} hours)"
+  noReasonProvided: "(No detailed reason provided)"
+  reasonLabel: "Reason: "
+  reportIdLabel: "Report ID: "

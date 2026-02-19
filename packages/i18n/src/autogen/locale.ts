@@ -13178,4 +13178,228 @@ export interface Locale extends ILocale {
          */
         "mfm": string;
     };
+    "_visitorDashboard": {
+        /**
+         * 現在、Misskeyサーバーは構築準備中です。
+         */
+        "building": string;
+        /**
+         * 管理者の方はログインしてください。
+         */
+        "pleaseLogin": string;
+        /**
+         * 現在、新規アカウント登録を停止しています。
+         */
+        "registrationStopped": string;
+    };
+    "_aiModeration": {
+        /**
+         * 違反フラグが付与されています
+         */
+        "violationDetected": string;
+        /**
+         * 違反の可能性があるノートを確認中です
+         */
+        "violationNoteHeader": string;
+        /**
+         * あなたのノートにサーバールール違反の可能性が検出されました。自動対応: {action}。モデレーターが確認中です。
+         */
+        "violationNoteBody": ParameterizedString<"action">;
+        "actionLabels": {
+            /**
+             * ノートを削除
+             */
+            "delete": string;
+            /**
+             * 投稿者本人以外には非表示
+             */
+            "hideFromOthers": string;
+            /**
+             * ホームタイムラインのみに制限
+             */
+            "homeOnly": string;
+            /**
+             * フラグ付与のみ
+             */
+            "flagOnly": string;
+            /**
+             * 既存の公開範囲を維持してフラグ付与
+             */
+            "keepAndFlag": string;
+        };
+    };
+    "_accountStanding": {
+        /**
+         * アカウントの健全性
+         */
+        "title": string;
+        /**
+         * このステータスは、あなた、管理者、およびモデレーターのみが閲覧できます。
+         */
+        "description": string;
+        "labels": {
+            /**
+             * 問題なし
+             */
+            "allGood": string;
+            /**
+             * 制限あり
+             */
+            "limited": string;
+            /**
+             * 強い制限あり
+             */
+            "veryLimited": string;
+            /**
+             * リスクあり
+             */
+            "atRisk": string;
+            /**
+             * 凍結
+             */
+            "suspended": string;
+        };
+        "headline": {
+            /**
+             * あなたのアカウントは健全です
+             */
+            "allGood": string;
+            /**
+             * あなたのアカウントは凍結されています
+             */
+            "suspended": string;
+            /**
+             * あなたのアカウントには制限があります
+             */
+            "restricted": string;
+        };
+        "descriptionText": {
+            /**
+             * ルールを守っていただきありがとうございます。
+             */
+            "allGood": string;
+            /**
+             * ルールに違反した場合、ここに制限が表示されます。
+             */
+            "restricted": string;
+        };
+        /**
+         * 有効な違反 - {n}
+         */
+        "activeViolations": ParameterizedString<"n">;
+        /**
+         * これらは、期限が切れるまでアカウントのステータスに影響します。
+         */
+        "activeViolationsDescription": string;
+        /**
+         * 有効な違反はありません。
+         */
+        "noActiveViolations": string;
+        /**
+         * 期限切れの違反 - {n}
+         */
+        "expiredViolations": ParameterizedString<"n">;
+        /**
+         * これらは、もうアカウントのステータスに影響しません。
+         */
+        "expiredViolationsDescription": string;
+        /**
+         * 期限切れの違反はありません。
+         */
+        "noExpiredViolations": string;
+        /**
+         * 期限:
+         */
+        "expires": string;
+        /**
+         * アカウントのステータス読み込みに失敗しました。
+         */
+        "loadingFailed": string;
+    };
+    "_moderation": {
+        /**
+         * モデレーション
+         */
+        "title": string;
+        /**
+         * 警告
+         */
+        "warn": string;
+        /**
+         * ノート削除
+         */
+        "deleteNote": string;
+        /**
+         * アカウント凍結
+         */
+        "suspendUser": string;
+        /**
+         * ノート一時停止
+         */
+        "restrictNoteTemporarily": string;
+        /**
+         * ノート一時停止の期間
+         */
+        "restrictionDuration": string;
+        /**
+         * 停止時間（時間）を入力してください。
+         */
+        "enterRestrictionHours": string;
+        /**
+         * 1 以上の時間を指定してください。
+         */
+        "invalidHours": string;
+        /**
+         * ユーザーへ通知する理由
+         */
+        "reasonToNotify": string;
+        /**
+         * 実行理由を入力してください（空でも可）。入力内容は対象ユーザーへのダイアログに表示されます。
+         */
+        "enterReason": string;
+        /**
+         * 「{action}」を実行します。よろしいですか？
+         */
+        "confirmAction": ParameterizedString<"action">;
+        /**
+         * 規約違反に関する重要なお知らせ
+         */
+        "notificationTitle": string;
+        /**
+         * 運営チームより、あなたのアカウントに関するモデレーション対応のお知らせです。
+         */
+        "notificationBody": string;
+        /**
+         * 運営チームにより、一部の機能制限または対応が実施されました。
+         */
+        "actionDetailDefault": string;
+        /**
+         * 利用規約に抵触する行為が確認されたため、警告を発行しました。今後の活動にご注意ください。
+         */
+        "actionDetailWarn": string;
+        /**
+         * 規約違反に該当する内容が含まれていたため、対象のノートを削除しました。 (#{id})
+         */
+        "actionDetailDeleteNote": ParameterizedString<"id">;
+        /**
+         * 重大な規約違反、または繰り返しの違反が確認されたため、アカウントを凍結しました。
+         */
+        "actionDetailSuspend": string;
+        /**
+         * 規約違反が確認されたため、一定期間ノートの投稿を制限しました。 ({hours}時間)
+         */
+        "actionDetailRestrictNote": ParameterizedString<"hours">;
+        /**
+         * （詳細理由は記載されていません）
+         */
+        "noReasonProvided": string;
+        /**
+         * 詳細理由:
+         */
+        "reasonLabel": string;
+        /**
+         * 通報ID:
+         */
+        "reportIdLabel": string;
+    };
 }

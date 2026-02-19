@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker path="/settings/standing" label="Account Standing" :keywords="['account', 'standing', 'health', 'moderation']" icon="ti ti-shield-check">
+<SearchMarker path="/settings/standing" label="Account Standing" :keywords="['account', 'standing', 'health', 'moderation']" icon="ti ti-shield-lock">
 	<div class="_gaps_m">
 		<div class="tabs">
 			<MkButton rounded @click="goSecurity"><i class="ti ti-lock"></i> {{ i18n.ts.security }}</MkButton>
-			<MkButton primary rounded disabled><i class="ti ti-shield-check"></i> Standing</MkButton>
+			<MkButton primary rounded disabled><i class="ti ti-shield-lock"></i> Standing</MkButton>
 		</div>
 
 		<MkInfo>Only you, admins, and moderators can view this status.</MkInfo>
@@ -209,7 +209,7 @@ onMounted(() => {
 
 definePage(() => ({
 	title: 'Account Standing',
-	icon: 'ti ti-shield-check',
+	icon: 'ti ti-shield-lock',
 }));
 </script>
 

@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkTextarea>
 
 			<MkFolder v-if="!isSystem">
-				<template #icon><i class="ti ti-shield-check"></i></template>
+				<template #icon><i class="ti ti-shield-lock"></i></template>
 				<template #label>アカウント健全性ステータス</template>
 				<div class="_gaps_s">
 					<MkInfo>この情報は本人または管理者・モデレーターのみ閲覧できます。</MkInfo>

@@ -152,6 +152,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 						</template>
 					</MkFolder>
+                        <MkFolder v-if="!isSystem">
+                                <template #icon><i class="ti ti-gavel"></i></template>
+                                <template #label>モデレーションアクション</template>
+                                <div class="_gaps_m">
+                                        <div class="_buttons">
+                                                <MkButton danger @click="performModerationAction('deleteNote')"><i class="ti ti-trash"></i> ノート削除</MkButton>
+                                                <MkButton danger @click="performModerationAction('suspendUser')"><i class="ti ti-user-off"></i> アカウント凍結</MkButton>
+                                                <MkButton @click="performModerationAction('warn')"><i class="ti ti-alert-triangle"></i> 警告</MkButton>
+                                                <MkButton @click="performModerationAction('restrictNoteTemporarily')"><i class="ti ti-clock-pause"></i> ノート一時停止</MkButton>
+                                        </div>
+                                </div>
+                        </MkFolder>
+
 
 					<div>
 						<MkButton v-if="iAmModerator" inline danger style="margin-right: 8px;" @click="unsetUserAvatar"><i class="ti ti-user-circle"></i> {{ i18n.ts.unsetUserAvatar }}</MkButton>
@@ -518,6 +531,69 @@ async function assignRole() {
 	await os.apiWithDialog('admin/roles/assign', { roleId, userId: user.value.id, expiresAt });
 	refreshUser();
 }
+
+
+async function performModerationAction(action: 'warn' | 'deleteNote' | 'suspendUser' | 'restrictNoteTemporarily') {
+	let noteIdOrUrl: string | null = null;
+	let restrictHours: number | null = null;
+
+	if (action === 'deleteNote') {
+		const noteInput = await os.inputText({
+			title: '削除対象ノート',
+			text: 'ノートIDまたはノートURLを入力してください。',
+			minLength: 1,
+		});
+		if (noteInput.canceled) return;
+		noteIdOrUrl = noteInput.result;
+	}
+
+	if (action === 'restrictNoteTemporarily') {
+		const durationInput = await os.inputNumber({
+			title: 'ノート一時停止の期間',
+			text: '停止時間（時間）を入力してください。',
+			default: 24,
+		});
+		if (durationInput.canceled) return;
+		if (durationInput.result <= 0) {
+			os.alert({
+				type: 'error',
+				text: '1以上の時間を指定してください。',
+			});
+			return;
+		}
+		restrictHours = Math.floor(durationInput.result);
+	}
+
+	const reasonInput = await os.inputText({
+		title: 'ユーザーへ通知する理由',
+		text: '実行理由を入力してください（空でも可）。入力内容は対象ユーザーへのダイアログに表示されます。',
+		default: '',
+	});
+	if (reasonInput.canceled) return;
+
+	const actionLabel = action === 'warn' ? '警告'
+		: action === 'deleteNote' ? 'ノート削除'
+			: action === 'suspendUser' ? 'アカウント凍結'
+				: 'ノート一時停止';
+
+	const confirmed = await os.confirm({
+		type: 'warning',
+		text: `対象ユーザーに対して「${actionLabel}」を実行します。よろしいですか？`,
+	});
+	if (confirmed.canceled) return;
+
+	await os.apiWithDialog('admin/perform-moderation-action' as any, {
+		userId: user.value.id,
+		action,
+		reason: reasonInput.result,
+		noteIdOrUrl,
+		restrictHours,
+		notifyTarget: true,
+	});
+
+	refreshUser();
+}
+
 
 async function unassignRole(role: typeof info.value.roles[number], ev: MouseEvent) {
 	os.popupMenu([{

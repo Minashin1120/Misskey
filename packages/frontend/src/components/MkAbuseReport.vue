@@ -51,6 +51,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<Mfm :text="report.comment" :linkNavigationBehavior="'window'"/>
 			</div>
 		</MkFolder>
+                <MkFolder v-if="targetNote" :defaultOpen="true">
+                        <template #icon><i class="ti ti-message-2"></i></template>
+                        <template #label>通報対象のノート</template>
+                        <MkNote :note="targetNote" />
+                </MkFolder>
+
 
 		<MkFolder :withSpacer="false">
 			<template #icon><MkAvatar :user="report.reporter" style="width: 18px; height: 18px;"/></template>
@@ -82,13 +88,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { provide, ref, watch } from 'vue';
+import { computed, provide, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
+import MkNote from '@/components/MkNote.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkKeyValue from '@/components/MkKeyValue.vue';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { dateString } from '@/filters/date.js';
 import MkFolder from '@/components/MkFolder.vue';
 import RouterView from '@/components/global/RouterView.vue';
@@ -106,8 +114,43 @@ const emit = defineEmits<{
 
 const targetRouter = createRouter(`/admin/user/${props.report.targetUserId}`);
 targetRouter.init();
+
 const reporterRouter = createRouter(`/admin/user/${props.report.reporterId}`);
 reporterRouter.init();
+
+const extractedNoteIdOrUrl = computed(() => {
+	const comment = props.report.comment;
+	// Try to find noteId: [id] or noteUrl: [url]
+	const idMatch = comment.match(/- noteId: ([a-z0-9]+)/i);
+	if (idMatch) return idMatch[1];
+	const urlMatch = comment.match(/- noteUrl: (https?:\/\/[^\s]+)/i);
+	if (urlMatch) return urlMatch[1];
+
+	// Also try generic URLs
+	const genericUrlMatch = comment.match(/https?:\/\/[^\s]+\/notes\/([a-z0-9]+)/i);
+	if (genericUrlMatch) return genericUrlMatch[0];
+
+	return null;
+});
+
+
+
+const targetNote = ref<Misskey.entities.Note | null>(null);
+
+watch(extractedNoteIdOrUrl, async (val) => {
+	if (val) {
+		const noteId = val.includes('/') ? val.match(/\/notes\/([a-z0-9]+)/i)?.[1] : val;
+		if (noteId) {
+			misskeyApi('notes/show', { noteId }).then(res => {
+				targetNote.value = res;
+			}).catch(() => {
+				targetNote.value = null;
+			});
+		}
+	} else {
+		targetNote.value = null;
+	}
+}, { immediate: true });
 
 const moderationNote = ref(props.report.moderationNote ?? '');
 
@@ -137,6 +180,7 @@ async function runModerationAction(action: 'warn' | 'deleteNote' | 'suspendUser'
 			title: '削除対象ノート',
 			text: 'ノートIDまたはノートURLを入力してください。',
 			minLength: 1,
+			default: extractedNoteIdOrUrl.value,
 		});
 		if (noteInput.canceled) return;
 		noteIdOrUrl = noteInput.result;

@@ -1,4 +1,6 @@
 import locales from 'i18n';
+import { I18n } from '@/misc/i18n.js';
+import type { UserProfilesRepository } from '@/models/_.js';
 /*
  * SPDX-FileCopyrightText: syuilo and misskey-project
  * SPDX-License-Identifier: AGPL-3.0-only
@@ -57,8 +59,8 @@ export class AiModerationGeminiProcessorService {
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 
-                @Inject(DI.userProfilesRepository)
-                private userProfilesRepository: UserProfilesRepository,
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
 
 		private metaService: MetaService,
 		private abuseReportService: AbuseReportService,
@@ -177,7 +179,11 @@ export class AiModerationGeminiProcessorService {
 
 				if (result.violation) {
 					violations++;
-					const actionLabel = await this.applyViolationAction(note, action);
+
+					const profile = await this.userProfilesRepository.findOneBy({ userId: note.userId });
+					const i18n = new I18n(locales[profile?.lang ?? 'ja-JP'] ?? locales['ja-JP']);
+
+					const actionLabel = await this.applyViolationAction(note, action, i18n);
 					const noteUrl = new URL(`/notes/${note.id}`, this.config.url).toString();
 					const confidence = typeof result.confidence === 'number'
 						? `\n- confidence: ${Math.max(0, Math.min(1, result.confidence)).toFixed(3)}`
@@ -188,7 +194,7 @@ export class AiModerationGeminiProcessorService {
 						`- noteUrl: ${noteUrl}`,
 						`- action: ${actionLabel}`,
 						`- reason: ${result.reason || 'No reason provided.'}${confidence}`,
-					].join('\n');
+					].join('\\n');
 
 					await this.abuseReportService.report([{
 						targetUserId: note.userId,
@@ -200,8 +206,8 @@ export class AiModerationGeminiProcessorService {
 
 					this.notificationService.createNotification(note.userId, 'app', {
 						appAccessTokenId: null,
-						customHeader: '違反の可能性があるノートを確認中です',
-						customBody: `あなたのノートにサーバールール違反の可能性が検出されました。自動対応: ${actionLabel}。モデレーターが確認中です。`,
+						customHeader: i18n.t('_aiModeration.violationNoteHeader'),
+						customBody: i18n.t('_aiModeration.violationNoteBody', { action: actionLabel }),
 						customIcon: new URL('/static-assets/tabler-badges/bell.png', this.config.url).toString(),
 					});
 
@@ -234,7 +240,7 @@ export class AiModerationGeminiProcessorService {
 	}
 
 	@bindThis
-	private async applyViolationAction(note: MiNote, action: AiModerationViolationAction): Promise<string> {
+	private async applyViolationAction(note: MiNote, action: AiModerationViolationAction, i18n: I18n<any>): Promise<string> {
 		switch (action) {
 			case 'delete': {
 				const noteAuthor = await this.usersRepository.findOneByOrFail({ id: note.userId });

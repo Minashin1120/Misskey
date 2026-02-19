@@ -104,8 +104,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 
-                @Inject(DI.userProfilesRepository)
-                private userProfilesRepository: UserProfilesRepository,
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
 
 		@Inject(DI.rolesRepository)
 		private rolesRepository: RolesRepository,
@@ -128,15 +128,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.noSuchUser);
 			}
 
-			                        const normalizedReason = (ps.reason ?? '').trim();
-			                        let actionDetail = i18n.t('_moderation.actionDetailDefault');
-			
-			                        switch (ps.action) {
-			                                case 'warn': {
-			                                        actionDetail = '利用規約に抵触する行為が確認されたため、警告を発行しました。今後の活動にご注意ください。';
-			                                        break;
-			                                }
-			                                case 'deleteNote': {					const noteId = this.extractNoteId(ps.noteIdOrUrl);
+			const profile = await this.userProfilesRepository.findOneBy({ userId: targetUser.id });
+			const i18n = new I18n(locales[profile?.lang ?? 'ja-JP'] ?? locales['ja-JP']);
+
+			const normalizedReason = (ps.reason ?? '').trim();
+			let actionDetail = i18n.t('_moderation.actionDetailDefault');
+
+			switch (ps.action) {
+				case 'warn': {
+					actionDetail = i18n.t('_moderation.actionDetailWarn');
+					break;
+				}
+				case 'deleteNote': {
+					const noteId = this.extractNoteId(ps.noteIdOrUrl);
 					if (noteId == null) {
 						throw new ApiError(meta.errors.invalidNote);
 					}
@@ -148,22 +152,24 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw err;
 					});
 
-					                                        if (note.userId !== targetUser.id) {
-					                                                throw new ApiError(meta.errors.noteNotOwnedByTarget);
-					                                        }
-					
-					                                        await this.noteDeleteService.delete(targetUser, note, false, me);
-					                                        actionDetail = `規約違反に該当する内容が含まれていたため、対象のノートを削除しました。 (#${note.id.toUpperCase()})`;
-					                                        break;
-					                                }				case 'suspendUser': {
-					                                        if (await this.roleService.isModerator(targetUser)) {
-					                                                throw new ApiError(meta.errors.cannotSuspendModerator);
-					                                        }
-					
-					                                        await this.userSuspendService.suspend(targetUser, me);
-					                                        actionDetail = '重大な規約違反、または繰り返しの違反が確認されたため、アカウントを凍結しました。';
-					                                        break;
-					                                }				case 'restrictNoteTemporarily': {
+					if (note.userId !== targetUser.id) {
+						throw new ApiError(meta.errors.noteNotOwnedByTarget);
+					}
+
+					await this.noteDeleteService.delete(targetUser, note, false, me);
+					actionDetail = i18n.t('_moderation.actionDetailDeleteNote', { id: note.id.toUpperCase() });
+					break;
+				}
+				case 'suspendUser': {
+					if (await this.roleService.isModerator(targetUser)) {
+						throw new ApiError(meta.errors.cannotSuspendModerator);
+					}
+
+					await this.userSuspendService.suspend(targetUser, me);
+					actionDetail = i18n.t('_moderation.actionDetailSuspend');
+					break;
+				}
+				case 'restrictNoteTemporarily': {
 					if (ps.restrictHours == null || ps.restrictHours <= 0) {
 						throw new ApiError(meta.errors.invalidDuration);
 					}
@@ -175,11 +181,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw err;
 					});
 
-					                                        const expiresAt = new Date(Date.now() + (ps.restrictHours * 60 * 60 * 1000));
-					                                        await this.roleService.assign(targetUser.id, role.id, expiresAt, me);
-					                                        actionDetail = `規約違反が確認されたため、一定期間ノートの投稿を制限しました。 (${ps.restrictHours}時間)`;
-					                                        break;
-					                                }				default:
+					const expiresAt = new Date(Date.now() + (ps.restrictHours * 60 * 60 * 1000));
+					await this.roleService.assign(targetUser.id, role.id, expiresAt, me);
+					actionDetail = i18n.t('_moderation.actionDetailRestrictNote', { hours: ps.restrictHours });
+					break;
+				}
+				default:
 					break;
 			}
 
@@ -188,22 +195,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				resolvedAs: ps.resolvedAs ?? 'accept',
 			}], me);
 
-			                        if (ps.notifyTarget && targetUser.host == null) {
-			                                const reasonText = normalizedReason.length > 0 ? normalizedReason : i18n.t('_moderation.noReasonProvided');
-			                                const body = [
-			                                        '運営チームより、あなたのアカウントに関するモデレーション対応のお知らせです。',
-			                                        actionDetail,
-			                                        '',
-			                                        i18n.t('_moderation.reasonLabel') + reasonText,
-			                                        i18n.t('_moderation.reportIdLabel') + report.id,
-			                                ].join('\n');
-			
-			                                await this.announcementService.create({
-			                                        title: i18n.t('_moderation.notificationTitle'),
-			                                        text: body,
-			                                        imageUrl: null,
-			                                        icon: 'warning',
-			                                        display: 'dialog',
+			if (ps.notifyTarget && targetUser.host == null) {
+				const reasonText = normalizedReason.length > 0 ? normalizedReason : i18n.t('_moderation.noReasonProvided');
+				const body = [
+					i18n.t('_moderation.notificationBody'),
+					actionDetail,
+					'',
+					i18n.t('_moderation.reasonLabel') + reasonText,
+					i18n.t('_moderation.reportIdLabel') + report.id,
+				].join('\\n');
+
+				await this.announcementService.create({
+					title: i18n.t('_moderation.notificationTitle'),
+					text: body,
+					imageUrl: null,
+					icon: 'warning',
+					display: 'dialog',
 					forExistingUsers: false,
 					silence: false,
 					needConfirmationToRead: true,

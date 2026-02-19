@@ -47,45 +47,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</SearchMarker>
 
 						<SearchMarker :keywords="['account', 'health', 'moderation', 'status']">
-							<MkFolder>
-								<template #icon><i class="ti ti-shield-check"></i></template>
-								<template #label><SearchLabel>アカウント健全性ステータス</SearchLabel></template>
-
-								<div class="_gaps_s">
-									<MkInfo>この情報はあなた本人と管理者・モデレーターのみ閲覧できます。</MkInfo>
-									<MkInfo v-if="accountHealthError" warn>{{ accountHealthError }}</MkInfo>
-
-									<div v-if="accountHealthLoading">読み込み中...</div>
-
-									<template v-else-if="accountHealth">
-										<MkKeyValue oneline>
-											<template #key>制限状態</template>
-											<template #value>{{ accountHealth.isRestricted ? '制限中' : '制限なし' }}</template>
-										</MkKeyValue>
-
-										<div class="_gaps_s">
-											<div>凍結: {{ accountHealth.statuses.isSuspended ? '有効' : 'なし' }}</div>
-											<div>サイレンス: {{ accountHealth.statuses.isSilenced ? '有効' : 'なし' }}</div>
-											<div>ノート一時停止: {{ accountHealth.statuses.isTemporaryNoteRestricted ? '有効' : 'なし' }}</div>
-											<div v-if="accountHealth.statuses.temporaryNoteRestrictionExpiresAt">
-												ノート一時停止期限: <MkTime :time="accountHealth.statuses.temporaryNoteRestrictionExpiresAt" mode="detail"/>
-											</div>
-										</div>
-
-										<MkFolder :defaultOpen="true">
-											<template #label>モデレーション履歴（最新{{ accountHealth.history.length }}件）</template>
-											<div class="_gaps_s">
-												<div v-if="accountHealth.history.length === 0">履歴はありません。</div>
-												<div v-for="item in accountHealth.history" :key="item.id" class="_panel" style="padding: 12px;">
-													<div><MkTime :time="item.createdAt" mode="detail"/> / {{ item.summary }}</div>
-													<div style="opacity: 0.8; font-size: 0.9em;">実施者: @{{ item.moderator.username }}</div>
-												</div>
-											</div>
-										</MkFolder>
-									</template>
-								</div>
-							</MkFolder>
-						</SearchMarker>
+										<FormLink to="/settings/standing">
+											<template #icon><i class="ti ti-shield-check"></i></template>
+											<SearchLabel>Account Standing</SearchLabel>
+										</FormLink>
+									</SearchMarker>
 					</div>
 				</MkFolder>
 			</SearchMarker>
@@ -196,7 +162,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import XMigration from './migration.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import FormLink from '@/components/form/link.vue';
@@ -218,7 +184,6 @@ import { migrateOldSettings } from '@/pref-migrate.js';
 import { hideAllTips as _hideAllTips, resetAllTips as _resetAllTips } from '@/tips.js';
 import { suggestReload } from '@/utility/reload-suggest.js';
 import { cloudBackup } from '@/preferences/utility.js';
-import { misskeyApi } from '@/utility/misskey-api.js';
 
 const $i = ensureSignin();
 
@@ -230,25 +195,6 @@ const stackingRouterView = prefer.model('experimental.stackingRouterView');
 const enableFolderPageView = prefer.model('experimental.enableFolderPageView');
 const enableHapticFeedback = prefer.model('experimental.enableHapticFeedback');
 const enableWebTranslatorApi = prefer.model('experimental.enableWebTranslatorApi');
-const accountHealthLoading = ref(true);
-const accountHealthError = ref<string | null>(null);
-const accountHealth = ref<{
-	isRestricted: boolean;
-	statuses: {
-		isSuspended: boolean;
-		isSilenced: boolean;
-		isTemporaryNoteRestricted: boolean;
-		temporaryNoteRestrictionExpiresAt: string | null;
-	};
-	history: Array<{
-		id: string;
-		createdAt: string;
-		summary: string;
-		moderator: {
-			username: string;
-		};
-	}>;
-} | null>(null);
 
 watch(skipNoteRender, () => {
 	suggestReload();
@@ -300,23 +246,6 @@ async function forceCloudBackup() {
 	await cloudBackup();
 	os.success();
 }
-
-async function fetchAccountHealth() {
-	accountHealthLoading.value = true;
-	accountHealthError.value = null;
-
-	try {
-		accountHealth.value = await misskeyApi('i/account-health' as any, {});
-	} catch (err) {
-		accountHealthError.value = err?.message ?? '取得に失敗しました。';
-	} finally {
-		accountHealthLoading.value = false;
-	}
-}
-
-onMounted(() => {
-	void fetchAccountHealth();
-});
 
 const headerActions = computed(() => []);
 

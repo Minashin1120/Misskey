@@ -113,6 +113,10 @@ export const ROUTE_DEF = [{
 		name: 'security',
 		component: page(() => import('@/pages/settings/security.vue')),
 	}, {
+		path: '/standing',
+		name: 'standing',
+		component: page(() => import('@/pages/settings/standing.vue')),
+	}, {
 		path: '/preferences',
 		name: 'preferences',
 		component: page(() => import('@/pages/settings/preferences.vue')),

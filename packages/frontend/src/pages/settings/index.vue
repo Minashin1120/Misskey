@@ -106,6 +106,11 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts.security,
 		to: '/settings/security',
 		active: currentPage.value?.route.name === 'security',
+	}, {
+		icon: 'ti ti-shield-check',
+		text: 'Account Standing',
+		to: '/settings/standing',
+		active: currentPage.value?.route.name === 'standing',
 	}],
 }, {
 	items: [{

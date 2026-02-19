@@ -152,7 +152,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 						</template>
 					</MkFolder>
-                        <MkFolder v-if="!isSystem">
+					<MkFolder v-if="!isSystem">
                                 <template #icon><i class="ti ti-gavel"></i></template>
                                 <template #label>モデレーションアクション</template>
                                 <div class="_gaps_m">

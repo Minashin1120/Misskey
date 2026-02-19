@@ -136,17 +136,25 @@
 		let messages = null;
 		const bootloaderLocales = localStorage.getItem('bootloaderLocales');
 		if (bootloaderLocales) {
-			messages = JSON.parse(bootloaderLocales);
+			try {
+				messages = JSON.parse(bootloaderLocales);
+			} catch (err) {
+				console.warn('Invalid bootloaderLocales in localStorage', err);
+			}
 		}
 		if (!messages) {
 			// older version of misskey does not store bootloaderLocales, stores locale as a whole
 			const legacyLocale = localStorage.getItem('locale');
 			if (legacyLocale) {
-				const parsed = JSON.parse(legacyLocale);
-				messages = {
-					...(parsed._bootErrors ?? {}),
-					reload: parsed.reload,
-				};
+				try {
+					const parsed = JSON.parse(legacyLocale);
+					messages = {
+						...(parsed._bootErrors ?? {}),
+						reload: parsed.reload,
+					};
+				} catch (err) {
+					console.warn('Invalid locale in localStorage', err);
+				}
 			}
 		}
 		if (!messages) messages = {};

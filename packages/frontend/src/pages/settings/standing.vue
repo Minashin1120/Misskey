@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker path="/settings/standing" :label="i18n.ts._accountStanding.title" :keywords="['account', 'standing', 'health', 'moderation']" icon="ti ti-shield-lock">
+<SearchMarker path="/settings/standing" label="Account Standing" :keywords="['account', 'standing', 'health', 'moderation']" icon="ti ti-shield-lock">
 	<div class="_gaps_m">
 		<div class="tabs">
 			<MkButton rounded @click="goSecurity"><i class="ti ti-lock"></i> {{ i18n.ts.security }}</MkButton>
@@ -37,16 +37,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div class="sectionHeader">
 					<i class="ti ti-alert-triangle icon"></i>
 					<div>
-						<div class="sectionTitle">{{ $t("_accountStanding.activeViolations", { n: activeViolations.length }) }}</div>
-						<div class="sectionCaption">{{ $t("_accountStanding.activeViolationsDescription") }}</div>
+						<div class="sectionTitle">{{ activeViolationsTitle }}</div>
+						<div class="sectionCaption">{{ activeViolationsDescription }}</div>
 					</div>
 				</div>
 
-				<div v-if="activeViolations.length === 0" class="empty">{{ $t("_accountStanding.noActiveViolations") }}</div>
+				<div v-if="activeViolations.length === 0" class="empty">{{ noActiveViolationsText }}</div>
 				<div v-for="item in activeViolations" :key="item.id" class="violationCard">
 					<div class="meta" v-if="item.createdAt"><MkTime :time="item.createdAt" mode="detail"/></div>
 					<div class="summary">{{ item.summary }}</div>
-					<div v-if="item.expiresAt" class="meta">{{ $t("_accountStanding.expires") }}<MkTime :time="item.expiresAt" mode="detail"/></div>
+					<div v-if="item.expiresAt" class="meta">{{ expiresText }}<MkTime :time="item.expiresAt" mode="detail"/></div>
 				</div>
 			</div>
 
@@ -54,12 +54,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div class="sectionHeader">
 					<i class="ti ti-history icon"></i>
 					<div>
-						<div class="sectionTitle">{{ $t("_accountStanding.expiredViolations", { n: pastLogs.length }) }}</div>
-						<div class="sectionCaption">{{ $t("_accountStanding.expiredViolationsDescription") }}</div>
+						<div class="sectionTitle">{{ expiredViolationsTitle }}</div>
+						<div class="sectionCaption">{{ expiredViolationsDescription }}</div>
 					</div>
 				</div>
 
-				<div v-if="pastLogs.length === 0" class="empty">{{ $t("_accountStanding.noExpiredViolations") }}</div>
+				<div v-if="pastLogs.length === 0" class="empty">{{ noExpiredViolationsText }}</div>
 				<div v-for="item in pastLogs" :key="item.id" class="violationCard">
 					<div class="meta"><MkTime :time="item.createdAt" mode="detail"/></div>
 					<div class="summary">{{ item.summary }}</div>
@@ -117,6 +117,19 @@ const standingText = computed(() => i18n.ts._accountStanding);
 const standingTitle = computed(() => standingText.value?.title ?? 'Account Standing');
 const standingDescriptionLead = computed(() => standingText.value?.description ?? 'This status can only be viewed by you, admins, and moderators.');
 const currentTabLabel = computed(() => standingTitle.value);
+const activeViolationsTitle = computed(() => {
+	const format = standingText.value?.activeViolations ?? 'Active violations - {n}';
+	return format.replace('{n}', String(activeViolations.value.length));
+});
+const activeViolationsDescription = computed(() => standingText.value?.activeViolationsDescription ?? 'These affect your account status until they expire.');
+const noActiveViolationsText = computed(() => standingText.value?.noActiveViolations ?? 'No active violations.');
+const expiredViolationsTitle = computed(() => {
+	const format = standingText.value?.expiredViolations ?? 'Expired violations - {n}';
+	return format.replace('{n}', String(pastLogs.value.length));
+});
+const expiredViolationsDescription = computed(() => standingText.value?.expiredViolationsDescription ?? 'These no longer affect your account status.');
+const noExpiredViolationsText = computed(() => standingText.value?.noExpiredViolations ?? 'No expired violations.');
+const expiresText = computed(() => standingText.value?.expires ?? 'Expires: ');
 const labels = computed(() => [
 	standingText.value?.labels?.allGood ?? 'All good',
 	standingText.value?.labels?.limited ?? 'Limited',

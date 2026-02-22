@@ -15,11 +15,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkA to="/">{{ instanceName }}</MkA>
 			</h1>
 				<div :class="$style.mainAbout">
-					<div>{{ $t("_visitorDashboard.building") }}</div>
-					<div>{{ $t("_visitorDashboard.pleaseLogin") }}</div>
+					<div>{{ i18n.ts._visitorDashboard.building }}</div>
+					<div>{{ i18n.ts._visitorDashboard.pleaseLogin }}</div>
 				</div>
 				<div :class="$style.mainWarn" class="_gaps_s">
-					<MkInfo warn>{{ $t("_visitorDashboard.registrationStopped") }}</MkInfo>
+					<MkInfo warn>{{ i18n.ts._visitorDashboard.registrationStopped }}</MkInfo>
 					<MkInfo v-if="instance.federation === 'specified'" warn>{{ i18n.ts.federationSpecified }}</MkInfo>
 					<MkInfo v-else-if="instance.federation === 'none'" warn>{{ i18n.ts.federationDisabled }}</MkInfo>
 				</div>

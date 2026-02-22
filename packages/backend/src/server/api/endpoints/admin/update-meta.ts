@@ -90,6 +90,7 @@ export const paramDef = {
 		blockRemoteSensitiveNotes: { type: 'boolean' },
 		blockRemoteSensitiveNotesShowPlaceholder: { type: 'boolean' },
 		emailRequiredForSignup: { type: 'boolean' },
+		accountApplicationsEnabled: { type: 'boolean' },
 		enableHcaptcha: { type: 'boolean' },
 		hcaptchaSiteKey: { type: 'string', nullable: true },
 		hcaptchaSecretKey: { type: 'string', nullable: true },
@@ -377,6 +378,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.emailRequiredForSignup !== undefined) {
 				set.emailRequiredForSignup = ps.emailRequiredForSignup;
+			}
+
+			if (ps.accountApplicationsEnabled !== undefined) {
+				set.accountApplicationsEnabled = ps.accountApplicationsEnabled;
 			}
 
 			if (ps.enableHcaptcha !== undefined) {

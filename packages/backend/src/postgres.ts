@@ -14,6 +14,7 @@ import { bindThis } from '@/decorators.js';
 import { MiAbuseUserReport } from '@/models/AbuseUserReport.js';
 import { MiAbuseReportNotificationRecipient } from '@/models/AbuseReportNotificationRecipient.js';
 import { MiAccessToken } from '@/models/AccessToken.js';
+import { MiAccountApplication } from '@/models/AccountApplication.js';
 import { MiAd } from '@/models/Ad.js';
 import { MiAnnouncement } from '@/models/Announcement.js';
 import { MiAnnouncementRead } from '@/models/AnnouncementRead.js';
@@ -220,6 +221,7 @@ export const entities = [
 	MiSystemAccount,
 	MiAbuseUserReport,
 	MiAbuseReportNotificationRecipient,
+	MiAccountApplication,
 	MiRegistrationTicket,
 	MiSignin,
 	MiModerationLog,

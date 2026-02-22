@@ -11,6 +11,7 @@ import {
 import { MiAbuseReportNotificationRecipient } from '@/models/AbuseReportNotificationRecipient.js';
 import { MiAbuseUserReport } from '@/models/AbuseUserReport.js';
 import { MiAccessToken } from '@/models/AccessToken.js';
+import { MiAccountApplication } from '@/models/AccountApplication.js';
 import { MiAd } from '@/models/Ad.js';
 import { MiAnnouncement } from '@/models/Announcement.js';
 import { MiAnnouncementRead } from '@/models/AnnouncementRead.js';
@@ -99,6 +100,7 @@ export const miRepository = {
 export {
 	MiAbuseUserReport,
 	MiAbuseReportNotificationRecipient,
+	MiAccountApplication,
 	MiAccessToken,
 	MiAd,
 	MiAnnouncement,
@@ -179,6 +181,7 @@ export type AbuseUserReportsRepository = Repository<MiAbuseUserReport> & MiRepos
 export type AbuseReportNotificationRecipientRepository =
 	Repository<MiAbuseReportNotificationRecipient>
 	& MiRepository<MiAbuseReportNotificationRecipient>;
+export type AccountApplicationsRepository = Repository<MiAccountApplication> & MiRepository<MiAccountApplication>;
 export type AccessTokensRepository = Repository<MiAccessToken> & MiRepository<MiAccessToken>;
 export type AdsRepository = Repository<MiAd> & MiRepository<MiAd>;
 export type AnnouncementsRepository = Repository<MiAnnouncement> & MiRepository<MiAnnouncement>;

@@ -20,11 +20,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 				<div :class="$style.mainWarn" class="_gaps_s">
 					<MkInfo warn>{{ i18n.ts._visitorDashboard.registrationStopped }}</MkInfo>
+					<MkInfo v-if="accountApplicationsEnabled" warn>このサーバーではアカウント申請を受け付けています（下の「アカウント申請」から送信できます）。</MkInfo>
 					<MkInfo v-if="instance.federation === 'specified'" warn>{{ i18n.ts.federationSpecified }}</MkInfo>
 					<MkInfo v-else-if="instance.federation === 'none'" warn>{{ i18n.ts.federationDisabled }}</MkInfo>
 				</div>
 				<div class="_gaps_s" :class="$style.mainActions">
 					<MkButton :class="$style.mainAction" full rounded link to="https://misskey-hub.net/servers/">{{ i18n.ts.exploreOtherServers }}</MkButton>
+					<MkButton v-if="accountApplicationsEnabled" :class="$style.mainAction" full rounded @click="openAccountApplicationForm">アカウント申請</MkButton>
 					<MkButton :class="$style.mainAction" full rounded data-cy-signin @click="signin()">{{ i18n.ts.login }}</MkButton>
 				</div>
 		</div>
@@ -71,6 +73,7 @@ const stats = ref<Misskey.entities.StatsResponse | null>(null);
 
 const showActivitiesForVisitor = computed(() => instance.clientOptions?.showActivitiesForVisitor !== false);
 const showTimelineForVisitor = computed(() => instance.clientOptions?.showTimelineForVisitor !== false);
+const accountApplicationsEnabled = computed(() => instance.disableRegistration && (instance as any).accountApplicationsEnabled === true);
 
 if (showActivitiesForVisitor.value) {
 	misskeyApi('stats', {}).then((res) => {
@@ -83,6 +86,44 @@ function signin() {
 		autoSet: true,
 	}, {
 		closed: () => dispose(),
+	});
+}
+
+async function openAccountApplicationForm() {
+	const { canceled, result } = await os.form('アカウント申請', {
+		desiredUsername: {
+			type: 'string',
+			label: '希望ユーザー名',
+			description: '@ なしで入力してください。',
+			required: true,
+		},
+		contact: {
+			type: 'string',
+			label: '連絡先',
+			description: 'メールアドレス、SNS、Discord等。審査連絡に使います。',
+			required: true,
+		},
+		message: {
+			type: 'string',
+			label: '申請理由',
+			description: '利用目的や自己紹介などを記入してください。',
+			required: true,
+			multiline: true,
+		},
+	});
+
+	if (canceled) return;
+
+	await os.apiWithDialog('account-applications/create' as any, {
+		desiredUsername: result.desiredUsername,
+		contact: result.contact,
+		message: result.message,
+	} as any);
+
+	await os.alert({
+		type: 'success',
+		title: '申請を受け付けました',
+		text: '管理者が確認後、必要に応じて連絡します。',
 	});
 }
 

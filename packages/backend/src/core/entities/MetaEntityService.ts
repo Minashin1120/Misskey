@@ -85,6 +85,7 @@ export class MetaEntityService {
 			inquiryUrl: instance.inquiryUrl,
 			disableRegistration: instance.disableRegistration,
 			emailRequiredForSignup: instance.emailRequiredForSignup,
+			accountApplicationsEnabled: instance.accountApplicationsEnabled,
 			enableHcaptcha: instance.enableHcaptcha,
 			hcaptchaSiteKey: instance.hcaptchaSiteKey,
 			enableMcaptcha: instance.enableMcaptcha,
@@ -175,4 +176,3 @@ export class MetaEntityService {
 		return packDetailed;
 	}
 }
-

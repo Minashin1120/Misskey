@@ -9,6 +9,7 @@ import {
 	MiAbuseReportNotificationRecipient,
 	MiAbuseUserReport,
 	MiAccessToken,
+	MiAccountApplication,
 	MiAd,
 	MiAnnouncement,
 	MiAnnouncementRead,
@@ -316,6 +317,12 @@ const $abuseReportNotificationRecipientRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $accountApplicationsRepository: Provider = {
+	provide: DI.accountApplicationsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiAccountApplication).extend(miRepository as MiRepository<MiAccountApplication>),
+	inject: [DI.db],
+};
+
 const $registrationTicketsRepository: Provider = {
 	provide: DI.registrationTicketsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiRegistrationTicket).extend(miRepository as MiRepository<MiRegistrationTicket>),
@@ -585,6 +592,7 @@ const $reversiGamesRepository: Provider = {
 		$hashtagsRepository,
 		$abuseUserReportsRepository,
 		$abuseReportNotificationRecipientRepository,
+		$accountApplicationsRepository,
 		$registrationTicketsRepository,
 		$authSessionsRepository,
 		$accessTokensRepository,
@@ -663,6 +671,7 @@ const $reversiGamesRepository: Provider = {
 		$hashtagsRepository,
 		$abuseUserReportsRepository,
 		$abuseReportNotificationRecipientRepository,
+		$accountApplicationsRepository,
 		$registrationTicketsRepository,
 		$authSessionsRepository,
 		$accessTokensRepository,

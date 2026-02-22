@@ -13,6 +13,7 @@ export type Keys = (
 	'neverShowDonationInfo' |
 	'neverShowLocalOnlyInfo' |
 	'modifiedVersionMustProminentlyOfferInAgplV3Section13Read' |
+	'accountApplicationsInfoShown' |
 	'lastUsed' |
 	'lang' |
 	'drafts' |

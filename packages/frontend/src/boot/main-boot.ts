@@ -296,11 +296,31 @@ export async function mainBoot() {
 			}
 		}
 
+		const showAccountApplicationsInfoIfNeeded = async () => {
+			if ($i) return;
+			if (!instance.disableRegistration) return;
+			if ((instance as any).accountApplicationsEnabled !== true) return;
+			if (miLocalStorage.getItem('accountApplicationsInfoShown') === 'true') return;
+			if (window.location.pathname.startsWith('/miauth')) return;
+
+			miLocalStorage.setItem('accountApplicationsInfoShown', 'true');
+			await alert({
+				type: 'info',
+				title: 'アカウント申請を受付中',
+				text: 'このサーバーは新規登録を停止していますが、アカウント申請を受け付けています。ログイン画面の「アカウント申請」ボタンから申請してください。',
+			});
+		};
+
 		const modifiedVersionMustProminentlyOfferInAgplV3Section13Read = miLocalStorage.getItem('modifiedVersionMustProminentlyOfferInAgplV3Section13Read');
 		if (modifiedVersionMustProminentlyOfferInAgplV3Section13Read !== 'true' && instance.repositoryUrl !== 'https://github.com/misskey-dev/misskey') {
 			const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkSourceCodeAvailablePopup.vue')), {}, {
-				closed: () => dispose(),
+				closed: () => {
+					dispose();
+					void showAccountApplicationsInfoIfNeeded();
+				},
 			});
+		} else {
+			void showAccountApplicationsInfoIfNeeded();
 		}
 
 		if (store.s.realtimeMode) {

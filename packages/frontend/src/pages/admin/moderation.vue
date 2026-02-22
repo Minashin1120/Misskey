@@ -24,6 +24,54 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 				</SearchMarker>
 
+				<SearchMarker :keywords="['account', 'application', 'signup', 'request']">
+					<MkSwitch v-model="accountApplicationsEnabled" @change="onChange_accountApplicationsEnabled">
+						<template #label><SearchLabel>アカウント申請を受け付ける</SearchLabel></template>
+						<template #caption><SearchText>新規登録停止中でも、未ログイン画面からアカウント申請フォームを送信できるようにします。</SearchText></template>
+					</MkSwitch>
+				</SearchMarker>
+
+				<SearchMarker :keywords="['account', 'applications', 'manage', 'requests']">
+					<MkFolder>
+						<template #icon><SearchIcon><i class="ti ti-user-question"></i></SearchIcon></template>
+						<template #label><SearchLabel>アカウント申請一覧</SearchLabel></template>
+
+						<div class="_gaps">
+							<MkSelect v-model="accountApplicationsState" :items="accountApplicationsStateDef" @update:modelValue="loadAccountApplications">
+								<template #label><SearchLabel>表示状態</SearchLabel></template>
+							</MkSelect>
+
+							<MkButton @click="loadAccountApplications">再読み込み</MkButton>
+
+							<div v-if="accountApplicationsLoading" class="_fullinfo">読み込み中...</div>
+							<div v-else-if="accountApplications.length === 0" class="_fullinfo">申請はありません。</div>
+
+							<template v-else>
+								<div v-for="app in accountApplications" :key="app.id" class="_gaps_s _card">
+									<div><b>希望ユーザー名:</b> <code>{{ app.desiredUsername }}</code></div>
+									<div><b>連絡先:</b> {{ app.contact }}</div>
+									<div><b>状態:</b> {{ app.status }}</div>
+									<div><b>申請日時:</b> {{ formatAccountApplicationDate(app.createdAt) }}</div>
+									<div v-if="app.reviewedAt"><b>審査日時:</b> {{ formatAccountApplicationDate(app.reviewedAt) }}</div>
+									<div v-if="app.requestIp"><b>IP:</b> <code>{{ app.requestIp }}</code></div>
+									<div class="_fullinfo" style="white-space: pre-wrap;">{{ app.message }}</div>
+
+									<MkTextarea v-model="app.adminMemoDraft">
+										<template #label>管理メモ</template>
+									</MkTextarea>
+
+									<div class="_buttons">
+										<MkButton @click="saveAccountApplicationMemo(app)">メモ保存</MkButton>
+										<MkButton primary @click="setAccountApplicationStatus(app, 'approved')">承認</MkButton>
+										<MkButton danger @click="setAccountApplicationStatus(app, 'rejected')">却下</MkButton>
+										<MkButton @click="setAccountApplicationStatus(app, 'pending')">保留に戻す</MkButton>
+									</div>
+								</div>
+							</template>
+						</div>
+					</MkFolder>
+				</SearchMarker>
+
 				<SearchMarker :keywords="['sensitive', 'remote', 'block']">
 					<MkSwitch v-model="blockRemoteSensitiveNotes" @change="onChange_blockRemoteSensitiveNotes">
 						<template #label><SearchLabel>{{ i18n.ts._serverSettings.blockRemoteSensitiveNotes }}</SearchLabel></template>
@@ -239,11 +287,13 @@ const meta = await misskeyApi('admin/meta') as Misskey.Endpoints['admin/meta']['
 	aiModerationLastCheckedNoteId: string | null;
 	blockRemoteSensitiveNotes: boolean;
 	blockRemoteSensitiveNotesShowPlaceholder: boolean;
+	accountApplicationsEnabled: boolean;
 	aiModerationViolationAction: 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly';
 };
 
 const enableRegistration = ref(!meta.disableRegistration);
 const emailRequiredForSignup = ref(meta.emailRequiredForSignup);
+const accountApplicationsEnabled = ref(!!meta.accountApplicationsEnabled);
 const blockRemoteSensitiveNotes = ref(meta.blockRemoteSensitiveNotes);
 const blockRemoteSensitiveNotesShowPlaceholder = ref(meta.blockRemoteSensitiveNotesShowPlaceholder);
 const {
@@ -280,6 +330,29 @@ const aiModerationManualScanJobId = ref<string | null>(null);
 const aiModerationManualScanStatus = ref('');
 const aiModerationManualScanLogs = ref<string[]>([]);
 let aiModerationManualScanPollTimer: ReturnType<typeof setTimeout> | null = null;
+type AccountApplicationRow = {
+	id: string;
+	createdAt: string;
+	updatedAt: string;
+	status: 'pending' | 'approved' | 'rejected';
+	desiredUsername: string;
+	contact: string;
+	message: string;
+	adminMemo: string;
+	adminMemoDraft: string;
+	requestIp: string | null;
+	reviewedById: string | null;
+	reviewedAt: string | null;
+};
+const accountApplications = ref<AccountApplicationRow[]>([]);
+const accountApplicationsLoading = ref(false);
+const accountApplicationsState = ref<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+const accountApplicationsStateDef = [
+	{ label: '未処理', value: 'pending' },
+	{ label: '承認済み', value: 'approved' },
+	{ label: '却下済み', value: 'rejected' },
+	{ label: 'すべて', value: 'all' },
+] as const;
 
 async function onChange_enableRegistration(value: boolean) {
 	if (value) {
@@ -303,6 +376,15 @@ function onChange_emailRequiredForSignup(value: boolean) {
 	os.apiWithDialog('admin/update-meta', {
 		emailRequiredForSignup: value,
 	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_accountApplicationsEnabled(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		accountApplicationsEnabled: value,
+	} as any).then(() => {
+		accountApplicationsEnabled.value = value;
 		fetchInstance(true);
 	});
 }
@@ -393,6 +475,52 @@ function save_mediaSilencedHosts() {
 	}).then(() => {
 		fetchInstance(true);
 	});
+}
+
+function formatAccountApplicationDate(v: string | null): string {
+	if (!v) return '-';
+	return new Date(v).toLocaleString();
+}
+
+async function loadAccountApplications() {
+	accountApplicationsLoading.value = true;
+	try {
+		const rows = await os.apiWithDialog('admin/account-applications/list' as any, {
+			limit: 100,
+			offset: 0,
+			state: accountApplicationsState.value,
+		} as any) as Omit<AccountApplicationRow, 'adminMemoDraft'>[];
+
+		accountApplications.value = rows.map(row => ({
+			...row,
+			adminMemoDraft: row.adminMemo ?? '',
+		}));
+	} finally {
+		accountApplicationsLoading.value = false;
+	}
+}
+
+async function saveAccountApplicationMemo(app: AccountApplicationRow) {
+	const res = await os.apiWithDialog('admin/account-applications/update' as any, {
+		id: app.id,
+		adminMemo: app.adminMemoDraft,
+	} as any) as Partial<AccountApplicationRow>;
+	app.adminMemo = res.adminMemo ?? app.adminMemoDraft;
+	app.adminMemoDraft = app.adminMemo;
+}
+
+async function setAccountApplicationStatus(app: AccountApplicationRow, status: AccountApplicationRow['status']) {
+	const res = await os.apiWithDialog('admin/account-applications/update' as any, {
+		id: app.id,
+		status,
+		adminMemo: app.adminMemoDraft,
+	} as any) as Partial<AccountApplicationRow>;
+
+	app.status = (res.status as AccountApplicationRow['status']) ?? status;
+	app.adminMemo = res.adminMemo ?? app.adminMemoDraft;
+	app.adminMemoDraft = app.adminMemo;
+	app.reviewedAt = (res.reviewedAt as string | null | undefined) ?? app.reviewedAt;
+	app.reviewedById = (res.reviewedById as string | null | undefined) ?? app.reviewedById;
 }
 
 function onChange_aiModerationViolationAction(value: 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly') {
@@ -557,6 +685,8 @@ async function cancel_aiModerationGeminiScanNow() {
 onBeforeUnmount(() => {
 	clearAiModerationManualScanPoll();
 });
+
+void loadAccountApplications();
 
 const headerTabs = computed(() => []);
 

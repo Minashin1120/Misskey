@@ -380,13 +380,20 @@ function onChange_emailRequiredForSignup(value: boolean) {
 	});
 }
 
-function onChange_accountApplicationsEnabled(value: boolean) {
-	os.apiWithDialog('admin/update-meta', {
-		accountApplicationsEnabled: value,
-	} as any).then(() => {
+async function onChange_accountApplicationsEnabled(value: boolean) {
+	try {
+		await misskeyApi('admin/update-meta', {
+			accountApplicationsEnabled: value,
+		} as any);
 		accountApplicationsEnabled.value = value;
 		fetchInstance(true);
-	});
+	} catch (err) {
+		os.alert({
+			type: 'error',
+			text: err instanceof Error ? err.message : String(err),
+		});
+		accountApplicationsEnabled.value = !value;
+	}
 }
 
 function onChange_blockRemoteSensitiveNotes(value: boolean) {
@@ -485,7 +492,7 @@ function formatAccountApplicationDate(v: string | null): string {
 async function loadAccountApplications() {
 	accountApplicationsLoading.value = true;
 	try {
-		const rows = await os.apiWithDialog('admin/account-applications/list' as any, {
+		const rows = await misskeyApi('admin/account-applications/list' as any, {
 			limit: 100,
 			offset: 0,
 			state: accountApplicationsState.value,
@@ -495,6 +502,11 @@ async function loadAccountApplications() {
 			...row,
 			adminMemoDraft: row.adminMemo ?? '',
 		}));
+	} catch (err) {
+		os.alert({
+			type: 'error',
+			text: err instanceof Error ? err.message : String(err),
+		});
 	} finally {
 		accountApplicationsLoading.value = false;
 	}

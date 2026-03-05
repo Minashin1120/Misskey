@@ -734,6 +734,12 @@ export class MiMeta {
 	})
 	public aiModerationGeminiApiKey: string | null;
 
+	@Column('varchar', {
+		length: 64,
+		default: 'gemini-2.5-flash-lite',
+	})
+	public aiModerationGeminiModel: string;
+
 	@Column({
 		...id(),
 		nullable: true,

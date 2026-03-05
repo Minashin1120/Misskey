@@ -605,6 +605,10 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			aiModerationGeminiModel: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
 			aiModerationLastCheckedNoteId: {
 				type: 'string',
 				optional: false, nullable: true,
@@ -785,6 +789,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				enableRemoteNotesCleaning: instance.enableRemoteNotesCleaning,
 				aiModerationEnabled: instance.aiModerationEnabled,
 				aiModerationGeminiApiKey: instance.aiModerationGeminiApiKey,
+			aiModerationGeminiModel: instance.aiModerationGeminiModel,
 				aiModerationLastCheckedNoteId: instance.aiModerationLastCheckedNoteId,
 				aiModerationViolationAction: instance.aiModerationViolationAction,
 				remoteNotesCleaningExpiryDaysForEachNotes: instance.remoteNotesCleaningExpiryDaysForEachNotes,

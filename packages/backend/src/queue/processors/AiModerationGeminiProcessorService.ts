@@ -23,7 +23,6 @@ import { QueueService } from '@/core/QueueService.js';
 import type { MiDriveFile, MiNote, DriveFilesRepository, NotesRepository, UsersRepository } from '@/models/_.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
-const MODEL_NAME = 'gemini-2.5-flash-lite';
 const SCAN_LIMIT_PER_RUN = 20;
 const MAX_IMAGE_ATTACHMENTS_PER_NOTE = 4;
 const MAX_IMAGE_FETCH_SIZE_BYTES = 2 * 1024 * 1024;
@@ -175,7 +174,7 @@ export class AiModerationGeminiProcessorService {
 					continue;
 				}
 
-				const result = await this.checkWithGemini(meta.aiModerationGeminiApiKey, rules, parts);
+				const result = await this.checkWithGemini(meta.aiModerationGeminiApiKey, meta.aiModerationGeminiModel, rules, parts);
 
 				if (result.violation) {
 					violations++;
@@ -189,7 +188,7 @@ export class AiModerationGeminiProcessorService {
 						? `\n- confidence: ${Math.max(0, Math.min(1, result.confidence)).toFixed(3)}`
 						: '';
 					const comment = [
-						`[AI Moderation / ${MODEL_NAME}] Server rule violation candidate detected.`,
+						`[AI Moderation / ${meta.aiModerationGeminiModel}] Server rule violation candidate detected.`,
 						`- noteId: ${note.id}`,
 						`- noteUrl: ${noteUrl}`,
 						`- action: ${actionLabel}`,
@@ -366,8 +365,8 @@ export class AiModerationGeminiProcessorService {
 	}
 
 	@bindThis
-	private async checkWithGemini(apiKey: string, rules: string[], noteParts: GeminiContentPart[]): Promise<GeminiModerationResult> {
-		const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${encodeURIComponent(apiKey)}`;
+	private async checkWithGemini(apiKey: string, modelName: string, rules: string[], noteParts: GeminiContentPart[]): Promise<GeminiModerationResult> {
+		const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
 		const prompt = {
 			text: [
 			'You are a strict moderation classifier.',

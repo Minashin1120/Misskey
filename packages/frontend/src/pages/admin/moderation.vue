@@ -105,8 +105,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div class="_gaps">
 						<MkSwitch :modelValue="aiModerationEnabled" @update:modelValue="onChange_aiModerationEnabled">
 						<template #label><SearchLabel>定期ルールスキャンを有効にする</SearchLabel></template>
-						<template #caption>Gemini 2.5 Flash-Liteで新規投稿を定期チェックし、違反候補を通報として送信します。</template>
+						<template #caption>Geminiで新規投稿を定期チェックし、違反候補を通報として送信します。</template>
 						</MkSwitch>
+
+												<MkSelect v-model="aiModerationGeminiModel" :items="aiModerationGeminiModelDef" @update:modelValue="onChange_aiModerationGeminiModel">
+												<template #label><SearchLabel>使用するモデル</SearchLabel></template>
+												<template #caption>AIスキャンに使用するGeminiモデルを選択します。</template>
+												</MkSelect>
 
 						<MkSelect v-model="aiModerationViolationAction" :items="aiModerationViolationActionDef" @update:modelValue="onChange_aiModerationViolationAction">
 						<template #label><SearchLabel>違反時の自動対応</SearchLabel></template>
@@ -284,6 +289,7 @@ import MkSelect from '@/components/MkSelect.vue';
 const meta = await misskeyApi('admin/meta') as Misskey.Endpoints['admin/meta']['res'] & {
 	aiModerationEnabled: boolean;
 	aiModerationGeminiApiKey: string | null;
+	aiModerationGeminiModel: string;
 	aiModerationLastCheckedNoteId: string | null;
 	blockRemoteSensitiveNotes: boolean;
 	blockRemoteSensitiveNotesShowPlaceholder: boolean;
@@ -317,6 +323,11 @@ const silencedHosts = ref(meta.silencedHosts?.join('\n') ?? '');
 const mediaSilencedHosts = ref(meta.mediaSilencedHosts.join('\n'));
 const aiModerationEnabled = ref(!!meta.aiModerationEnabled);
 const aiModerationGeminiApiKey = ref(meta.aiModerationGeminiApiKey ?? '');
+const aiModerationGeminiModel = ref(meta.aiModerationGeminiModel ?? 'gemini-2.5-flash-lite');
+const aiModerationGeminiModelDef = [
+	{ label: 'Gemini 2.5 Flash-Lite', value: 'gemini-2.5-flash-lite' },
+	{ label: 'Gemini 3.1 Flash-Lite (Preview)', value: 'gemini-3.1-flash-lite-preview' },
+] as const;
 const aiModerationLastCheckedNoteId = ref(meta.aiModerationLastCheckedNoteId ?? '');
 const aiModerationViolationAction = ref(meta.aiModerationViolationAction ?? 'flagOnly');
 const aiModerationViolationActionDef = [
@@ -535,6 +546,15 @@ async function setAccountApplicationStatus(app: AccountApplicationRow, status: A
 	app.reviewedById = (res.reviewedById as string | null | undefined) ?? app.reviewedById;
 }
 
+function onChange_aiModerationGeminiModel(value: string) {
+	os.apiWithDialog('admin/update-meta', {
+		aiModerationGeminiModel: value,
+	} as any).then(() => {
+		aiModerationGeminiModel.value = value;
+		fetchInstance(true);
+	});
+}
+
 function onChange_aiModerationViolationAction(value: 'delete' | 'hideFromOthers' | 'homeOnly' | 'flagOnly') {
 	os.apiWithDialog('admin/update-meta', {
 		aiModerationViolationAction: value,
@@ -560,9 +580,8 @@ function onChange_aiModerationEnabled(value: boolean) {
 function save_aiModerationGeminiApiKey() {
 	os.apiWithDialog('admin/update-meta', {
 		aiModerationGeminiApiKey: aiModerationGeminiApiKey.value.trim() === '' ? null : aiModerationGeminiApiKey.value,
-	} as Misskey.Endpoints['admin/update-meta']['req'] & {
-		aiModerationGeminiApiKey: string | null;
-	}).then(() => {
+		aiModerationGeminiModel: aiModerationGeminiModel.value,
+	} as any).then(() => {
 		fetchInstance(true);
 	});
 }
